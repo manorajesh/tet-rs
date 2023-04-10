@@ -3,8 +3,7 @@
 // update display vector function
 
 // TODO:
-// - state variable not changing after second new piece
-// - right movement not working
+// - Fix issue with line clearing
 
 use rand::seq::SliceRandom;
 use core::panic;
@@ -23,6 +22,7 @@ fn render(display: &Vec<Vec<char>>) {
             match ch {
                 &EMPTY => print!(". "),
                 'a' => print!("[]"),
+                'l' => print!("[]"),
                 _ => panic!("unknown character: {}", ch),
             }
         }
@@ -43,12 +43,16 @@ fn init(width: i32, height: i32) -> Vec<Vec<char>> {
     display
 }
 
-fn gravity(display: &mut Vec<Vec<char>>) -> i32 {
+fn gravity(display: &mut Vec<Vec<char>>) -> bool {
+    let prev_display = display.clone();
     for row in (0..display.len()).rev() {
         for col in 0..display[row].len() {
             if display[row][col] == 'a' {
                 if row == display.len()-1 || display[row+1][col] != EMPTY {
-                    return 2; // new piece
+                    *display = prev_display;
+                    landed(display);
+                    let game_over = new_piece(display);
+                    return game_over;
                 }
 
                 display[row][col] = EMPTY;
@@ -56,37 +60,54 @@ fn gravity(display: &mut Vec<Vec<char>>) -> i32 {
             }
         }
     }
-    0
+    false
 }
 
 fn handle_input(display: &mut Vec<Vec<char>>, key: char) {
-    for row in (0..display.len()).rev() {
-        for col in 0..display[row].len() {
-            if display[row][col] == 'a' {
-                match key {
-                    'l' => {
+    let prev_display = display.clone();
+    match key {
+        'l' => {
+            for row in (0..display.len()).rev() {
+                for col in 0..display[row].len() {
+                    if display[row][col] == 'a' {
                         if col == 0 || display[row][col-1] != EMPTY {
+                            *display = prev_display;
                             return;
                         }
                         display[row][col] = EMPTY;
                         display[row][col-1] = 'a';
                     }
-                    'r' => {
+                }
+            }
+        },
+
+        'r' => {
+            for row in (0..display.len()).rev() {
+                for col in (0..display[row].len()).rev() {
+                    if display[row][col] == 'a' {
                         if col == display[row].len()-1 || display[row][col+1] != EMPTY {
+                            *display = prev_display;
                             return;
                         }
                         display[row][col] = EMPTY;
                         display[row][col+1] = 'a';
                     }
-                    _ => (),
                 }
             }
-        }
+        },
+
+        _ => (),
     }
 }
 
-fn new_piece(display: &mut Vec<Vec<char>>) -> i32 {
+fn new_piece(display: &mut Vec<Vec<char>>) -> bool {
     let half_width = display[0].len() / 2;
+
+    // game over
+    if display[0][half_width] != EMPTY {
+        return true;
+    }
+
     let pieces = vec!['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
 
     let piece = pieces.choose(&mut rand::thread_rng()).unwrap();
@@ -154,8 +175,34 @@ fn new_piece(display: &mut Vec<Vec<char>>) -> i32 {
         }
         _ => panic!("unknown picece: {}", piece),
     }
+    false
+}
 
-    0 // return to moving state
+fn landed(display: &mut Vec<Vec<char>>) {
+    for row in display {
+        for ch in row {
+            if *ch == 'a' {
+                *ch = 'l';
+            }
+        }
+    }
+}
+
+fn full_line(display: &mut Vec<Vec<char>>) {
+    for row in 0..display.len() {
+        for ch in &display[row] {
+            if *ch == EMPTY {
+                return;
+            }
+        }
+    }
+
+    // remove full line
+    for row in display {
+        for ch in row {
+            *ch = EMPTY;
+        }
+    }
 }
 
 fn main() {
@@ -164,9 +211,11 @@ fn main() {
 
     const WIDTH: i32 = 15;
     const HEIGHT: i32 = 20;
-    let mut state = 2; // 0: moving, 2: new piece
 
     let mut display: Vec<Vec<char>> = init(WIDTH, HEIGHT);
+
+    print!("{}", termion::cursor::Hide);
+    new_piece(&mut display);
     
     // main loop
     loop {
@@ -187,20 +236,22 @@ fn main() {
             break;
         }
 
-        // spawn new piece
-        if state == 2 {
-            state = new_piece(&mut display);
-        }
-
         // gravity
-        state = gravity(&mut display);
+        if gravity(&mut display) {
+            break;
+        }
 
         // handle input
         handle_input(&mut display, key);
 
+        // full line
+        full_line(&mut display);
+
         // render
         render(&display);
-        sleep(Duration::from_millis(300));
         stdout.flush().unwrap();
+        sleep(Duration::from_millis(150));
     }
+
+    print!("{}", termion::cursor::Show);
 }
