@@ -108,7 +108,8 @@ fn new_piece(display: &mut Vec<Vec<char>>) -> bool {
         return true;
     }
 
-    let pieces = vec!['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
+    // let pieces = vec!['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
+    let pieces = vec!['I'];
 
     let piece = pieces.choose(&mut rand::thread_rng()).unwrap();
     match piece {
@@ -189,19 +190,14 @@ fn landed(display: &mut Vec<Vec<char>>) {
 }
 
 fn full_line(display: &mut Vec<Vec<char>>) {
-    for row in 0..display.len() {
+    'outer: for row in (0..display.len()).rev() {
         for ch in &display[row] {
-            if *ch == EMPTY {
-                return;
+            if *ch != 'l' {
+                continue 'outer;
             }
         }
-    }
-
-    // remove full line
-    for row in display {
-        for ch in row {
-            *ch = EMPTY;
-        }
+        display.remove(row);
+        display.insert(row, vec![EMPTY; display[0].len()]); // insert empty row at idx
     }
 }
 
