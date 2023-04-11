@@ -8,17 +8,17 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool) {
         return;
     }
 
-    print!("{}", termion::cursor::Goto(4, 1)); // clear screen and move cursor to top left
+    print!("{}", termion::cursor::Goto(3, 1)); // clear screen and move cursor to top left
     for (c, row) in display.iter().enumerate() {
         for ch in row {
             match ch {
-                &EMPTY => print!(". "),
+                &EMPTY => print!(" ."),
                 'a' => print!("[]"),
                 'l' => print!("[]"),
                 _ => panic!("unknown character: {}", ch),
             }
         }
-        print!("{}", termion::cursor::Goto(4, (c+2) as u16));
+        print!("{}", termion::cursor::Goto(3, (c+2) as u16));
     }
 }
 
@@ -41,10 +41,10 @@ pub fn init(width: i32, height: i32) -> Vec<Vec<char>> {
         for _ in row {
             print!("  ");
         }
-        print!(" !>"); // right wall
+        print!("!>"); // right wall
         print!("\r\n");
     }
-    print!("<!{}!>\r\n", "=".repeat(display[0].len() * 2+1)); // bottom wall
+    print!("<!{}!>\r\n", "=".repeat(display[0].len() * 2)); // bottom wall
     print!("  {}", "\\/".repeat(display[0].len())); // bottom spikes
     display
 }
