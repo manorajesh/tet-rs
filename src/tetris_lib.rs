@@ -113,6 +113,12 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char) {
             gravity(display);
         }
 
+        'u' => {
+            // rotate piece
+            let mut new_piece: Vec<Vec<char>> = Vec::new();
+            
+        }
+
         _ => (),
     }
 }

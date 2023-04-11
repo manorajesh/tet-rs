@@ -47,6 +47,7 @@ fn main() {
                 Key::Right => 'r',     // right
                 Key::Char(' ') => 's', // down with spacebar
                 Key::Down => 'd',      // down
+                Key::Up => 'u',        // rotate
                 _ => ' ',
             }
         } else {
