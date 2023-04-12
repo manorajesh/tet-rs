@@ -5,7 +5,7 @@
 // TODO:
 // - add score
 // - add level
-// - add rotation
+// - s and z pieces are not rotating correctly
 
 mod tetrominoe;
 mod tetris_lib;
@@ -21,18 +21,21 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
 use tetris_lib::{full_line, gravity, handle_input, init, new_piece, render};
+use tetrominoe::Tetrominoe;
 
 fn main() {
     let mut stdin = termion::async_stdin().keys();
+    // let mut stdin = std::io::stdin().keys();
     let mut stdout = stdout().into_raw_mode().unwrap();
 
     const WIDTH: i32 = 10;
     const HEIGHT: i32 = 20;
 
     let mut display: Vec<Vec<char>> = init(WIDTH, HEIGHT);
+    let mut active_piece = Tetrominoe::new();
 
     print!("{}", termion::cursor::Hide);
-    new_piece(&mut display);
+    new_piece(&mut display, &mut active_piece);
 
     let mut counter: usize = 0;
 
@@ -60,15 +63,15 @@ fn main() {
         }
 
         // gravity
-        if counter == 3 {
-            if gravity(&mut display) {
+        if counter == 5 {
+            if gravity(&mut display, &mut active_piece) {
                 break;
             }
             counter = 0;
         }
 
         // handle input
-        handle_input(&mut display, key);
+        handle_input(&mut display, key, &mut active_piece);
 
         // full line
         full_line(&mut display);

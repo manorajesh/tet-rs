@@ -1,11 +1,21 @@
 use crate::tetris_lib::EMPTY;
 
 pub struct Tetrominoe {
-    shape: Vec<Vec<char>>
+    pub shape: Vec<Vec<char>>,
+    pub row: usize,
+    pub col: usize,
 }
 
 impl Tetrominoe {
-    pub fn new(shape: char) -> Tetrominoe {
+    pub fn new() -> Tetrominoe {
+        Tetrominoe {
+            shape: Vec::new(),
+            row: 0,
+            col: 0,
+        }
+    }
+
+    pub fn set(&mut self, shape: char) {
         let shape = match shape {
             'I' => vec![vec![EMPTY, 'a', EMPTY, EMPTY],
                         vec![EMPTY, 'a', EMPTY, EMPTY],
@@ -44,6 +54,30 @@ impl Tetrominoe {
                         
             _ => panic!("Unknown shape: {}", shape),
         };
-        Tetrominoe { shape }
+        self.shape = shape;
     }
+
+    pub fn set_pos(&mut self, row: usize, col: usize) {
+        self.row = row;
+        self.col = col;
+    }
+
+    pub fn rotate(&mut self) {
+
+        // transpose or swap rows and columns
+        let n = self.shape.len();
+        for i in 0..n {
+            for j in i..n {
+                let temp = self.shape[i][j];
+                self.shape[i][j] = self.shape[j][i];
+                self.shape[j][i] = temp;
+            }
+        }
+        
+        // reverse each row to rotate
+        for i in 0..n {
+            self.shape[i].reverse();
+        }
+    }
+    
 }

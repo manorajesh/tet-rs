@@ -1,5 +1,8 @@
 use core::panic;
-use rand::seq::SliceRandom;
+use std::fs::File;
+use std::io::Read;
+
+use crate::tetrominoe::Tetrominoe;
 
 pub const EMPTY: char = '.';
 
@@ -18,7 +21,7 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool) {
                 _ => panic!("unknown character: {}", ch),
             }
         }
-        print!("{}", termion::cursor::Goto(3, (c+2) as u16));
+        print!("{}", termion::cursor::Goto(3, (c + 2) as u16));
     }
 }
 
@@ -49,7 +52,7 @@ pub fn init(width: i32, height: i32) -> Vec<Vec<char>> {
     display
 }
 
-pub fn gravity(display: &mut Vec<Vec<char>>) -> bool {
+pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) -> bool {
     let prev_display = display.clone();
     for row in (0..display.len()).rev() {
         for col in 0..display[row].len() {
@@ -57,7 +60,7 @@ pub fn gravity(display: &mut Vec<Vec<char>>) -> bool {
                 if row == display.len() - 1 || display[row + 1][col] != EMPTY {
                     *display = prev_display;
                     landed(display);
-                    let game_over = new_piece(display);
+                    let game_over = new_piece(display, active_piece);
                     return game_over;
                 }
 
@@ -66,10 +69,11 @@ pub fn gravity(display: &mut Vec<Vec<char>>) -> bool {
             }
         }
     }
+    active_piece.row += 1;
     false
 }
 
-pub fn handle_input(display: &mut Vec<Vec<char>>, key: char) {
+pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut Tetrominoe) {
     let prev_display = display.clone();
     match key {
         'l' => {
@@ -84,6 +88,10 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char) {
                         display[row][col - 1] = 'a';
                     }
                 }
+            }
+
+            if active_piece.col > 0 {
+                active_piece.col -= 1;
             }
         }
 
@@ -100,22 +108,43 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char) {
                     }
                 }
             }
+            active_piece.col += 1;
         }
 
         's' => {
             // bring down piece until new piece is created
             while display[0][display[0].len() / 2] == EMPTY {
-                gravity(display);
+                gravity(display, active_piece);
             }
         }
 
         'd' => {
-            gravity(display);
+            gravity(display, active_piece);
         }
 
         'u' => {
             // rotate piece
-            let mut new_piece: Vec<Vec<char>> = Vec::new();
+            active_piece.rotate();
+            if active_piece.row + 4 > display.len() {
+                active_piece.row = display.len() - 4;
+            }
+            
+            if active_piece.col + 4 > display[0].len() {
+                active_piece.col = display[0].len() - 4;
+            }
+
+            // clear piece and replace with new rotated piece
+            for row in active_piece.row..active_piece.row + 4 {
+                for col in active_piece.col..active_piece.col + 4 {
+                    display[row][col] = EMPTY;
+                }
+            }
+
+            for row in active_piece.row..active_piece.row + 4 {
+                for col in active_piece.col..active_piece.col + 4 {
+                    display[row][col] = active_piece.shape[row - active_piece.row][col - active_piece.col];
+                }
+            }
             
         }
 
@@ -123,7 +152,7 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char) {
     }
 }
 
-pub fn new_piece(display: &mut Vec<Vec<char>>) -> bool {
+pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) -> bool {
     let half_width = display[0].len() / 2;
 
     // game over
@@ -132,9 +161,9 @@ pub fn new_piece(display: &mut Vec<Vec<char>>) -> bool {
     }
 
     let pieces = vec!['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
-    // let pieces = vec!['I'];
+    // let pieces = vec!['S'];
 
-    let piece = pieces.choose(&mut rand::thread_rng()).unwrap();
+    let piece = pieces[getrandom() % pieces.len()];
     match piece {
         'I' => {
             // I
@@ -199,6 +228,8 @@ pub fn new_piece(display: &mut Vec<Vec<char>>) -> bool {
         }
         _ => panic!("unknown picece: {}", piece),
     }
+    active_piece.set(piece);
+    active_piece.set_pos(0, (half_width-1) as usize);
     false
 }
 
@@ -222,4 +253,11 @@ pub fn full_line(display: &mut Vec<Vec<char>>) {
         display.remove(row);
         display.insert(0, vec![EMPTY; display[0].len()]); // add new line at the top
     }
+}
+
+fn getrandom() -> usize {
+    let mut file = File::open("/dev/urandom").expect("failed to open /dev/urandom");
+    let mut bytes = [0; 8];
+    file.read_exact(&mut bytes).unwrap();
+    usize::from_le_bytes(bytes)
 }
