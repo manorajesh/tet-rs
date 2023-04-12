@@ -123,6 +123,7 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
         }
 
         'u' => {
+            let prev_display = display.clone();
             // rotate piece
             active_piece.rotate();
             if active_piece.row + 4 > display.len() {
@@ -136,16 +137,22 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
             // clear piece and replace with new rotated piece
             for row in active_piece.row..active_piece.row + 4 {
                 for col in active_piece.col..active_piece.col + 4 {
+                    if display[row][col] == 'l' {
+                        continue;
+                    }
                     display[row][col] = EMPTY;
                 }
             }
 
             for row in active_piece.row..active_piece.row + 4 {
                 for col in active_piece.col..active_piece.col + 4 {
+                    if display[row][col] != EMPTY && active_piece.shape[row - active_piece.row][col - active_piece.col] != EMPTY {
+                        *display = prev_display;
+                        return;
+                    }
                     display[row][col] = active_piece.shape[row - active_piece.row][col - active_piece.col];
                 }
             }
-            
         }
 
         _ => (),
@@ -161,7 +168,7 @@ pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) ->
     }
 
     let pieces = vec!['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
-    // let pieces = vec!['S'];
+    // let pieces = vec!['Z', 'S'];
 
     let piece = pieces[getrandom() % pieces.len()];
     match piece {
