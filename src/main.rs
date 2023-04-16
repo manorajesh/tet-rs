@@ -9,6 +9,7 @@
 
 mod tetrominoe;
 mod tetris_lib;
+mod gamescore;
 
 use std::{
     io::{stdout, Write},
@@ -22,6 +23,7 @@ use termion::raw::IntoRawMode;
 
 use tetris_lib::{full_line, gravity, handle_input, init, new_piece, render, ghost_piece};
 use tetrominoe::Tetrominoe;
+use gamescore::GameScore;
 
 fn main() {
     let mut stdin = termion::async_stdin().keys();
@@ -33,6 +35,7 @@ fn main() {
 
     let mut display: Vec<Vec<char>> = init(WIDTH, HEIGHT);
     let mut active_piece = Tetrominoe::new();
+    let mut gamescore = GameScore::new();
 
     print!("{}", termion::cursor::Hide);
     new_piece(&mut display, &mut active_piece);
@@ -74,7 +77,7 @@ fn main() {
         handle_input(&mut display, key, &mut active_piece);
 
         // full line
-        full_line(&mut display);
+        full_line(&mut display, &mut gamescore);
 
         // ghost piece
         ghost_piece(&mut display, &mut active_piece);
@@ -83,7 +86,7 @@ fn main() {
         let is_updated = display != prev_display;
 
         // render
-        render(&mut display, is_updated);
+        render(&mut display, is_updated, &gamescore);
         sleep(Duration::from_millis(50));
         stdout.flush().unwrap();
         counter += 1;

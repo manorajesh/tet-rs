@@ -3,10 +3,11 @@ use std::fs::File;
 use std::io::Read;
 
 use crate::tetrominoe::Tetrominoe;
+use crate::gamescore::GameScore;
 
 pub const EMP: char = '.';
 
-pub fn render(display: &Vec<Vec<char>>, is_updated: bool) {
+pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore) {
     if !is_updated {
         return;
     }
@@ -24,6 +25,11 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool) {
         }
         print!("{}", termion::cursor::Goto(3, (c + 2) as u16));
     }
+
+    print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 1));
+    print!("Score: {}", score.score);
+    print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 3));
+    print!("Level: {}", score.level);
 }
 
 pub fn init(width: i32, height: i32) -> Vec<Vec<char>> {
@@ -251,7 +257,7 @@ pub fn landed(display: &mut Vec<Vec<char>>) {
     }
 }
 
-pub fn full_line(display: &mut Vec<Vec<char>>) {
+pub fn full_line(display: &mut Vec<Vec<char>>, score: &mut GameScore) {
     'outer: for row in (0..display.len()).rev() {
         for ch in &display[row] {
             if *ch != 'l' {
@@ -260,6 +266,8 @@ pub fn full_line(display: &mut Vec<Vec<char>>) {
         }
         display.remove(row);
         display.insert(0, vec![EMP; display[0].len()]); // add new line at the top
+        score.score += 100;
+        score.level += score.score / 1000;
     }
 }
 
