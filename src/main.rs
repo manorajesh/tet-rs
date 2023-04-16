@@ -20,7 +20,7 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
-use tetris_lib::{full_line, gravity, handle_input, init, new_piece, render};
+use tetris_lib::{full_line, gravity, handle_input, init, new_piece, render, ghost_piece};
 use tetrominoe::Tetrominoe;
 
 fn main() {
@@ -76,11 +76,14 @@ fn main() {
         // full line
         full_line(&mut display);
 
+        // ghost piece
+        ghost_piece(&mut display, &mut active_piece);
+
         // check if display was changed
         let is_updated = display != prev_display;
 
         // render
-        render(&display, is_updated);
+        render(&mut display, is_updated);
         sleep(Duration::from_millis(50));
         stdout.flush().unwrap();
         counter += 1;

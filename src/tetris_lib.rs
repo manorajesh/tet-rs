@@ -4,10 +4,10 @@ use std::io::Read;
 
 use crate::tetrominoe::Tetrominoe;
 
-pub const EMPTY: char = '.';
+pub const EMP: char = '.';
 
 pub fn render(display: &Vec<Vec<char>>, is_updated: bool) {
-    if is_updated {
+    if !is_updated {
         return;
     }
 
@@ -15,9 +15,10 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool) {
     for (c, row) in display.iter().enumerate() {
         for ch in row {
             match ch {
-                &EMPTY => print!(" ."),
+                &EMP => print!(" ."),
                 'a' => print!("[]"),
                 'l' => print!("[]"),
+                'g' => print!("=="),
                 _ => panic!("unknown character: {}", ch),
             }
         }
@@ -32,7 +33,7 @@ pub fn init(width: i32, height: i32) -> Vec<Vec<char>> {
     for _ in 0..height {
         let mut row: Vec<char> = Vec::new();
         for _ in 0..width {
-            row.push(EMPTY);
+            row.push(EMP);
         }
         display.push(row);
     }
@@ -57,14 +58,14 @@ pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) -> b
     for row in (0..display.len()).rev() {
         for col in 0..display[row].len() {
             if display[row][col] == 'a' {
-                if row == display.len() - 1 || display[row + 1][col] != EMPTY {
+                if row == display.len() - 1 || display[row + 1][col] == 'l' {
                     *display = prev_display;
                     landed(display);
                     let game_over = new_piece(display, active_piece);
                     return game_over;
                 }
 
-                display[row][col] = EMPTY;
+                display[row][col] = EMP;
                 display[row + 1][col] = 'a';
             }
         }
@@ -80,11 +81,11 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
             for row in (0..display.len()).rev() {
                 for col in 0..display[row].len() {
                     if display[row][col] == 'a' {
-                        if col == 0 || display[row][col - 1] != EMPTY {
+                        if col == 0 || display[row][col - 1] == 'l' {
                             *display = prev_display;
                             return;
                         }
-                        display[row][col] = EMPTY;
+                        display[row][col] = EMP;
                         display[row][col - 1] = 'a';
                     }
                 }
@@ -99,11 +100,11 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
             for row in (0..display.len()).rev() {
                 for col in (0..display[row].len()).rev() {
                     if display[row][col] == 'a' {
-                        if col == display[row].len() - 1 || display[row][col + 1] != EMPTY {
+                        if col == display[row].len() - 1 || display[row][col + 1] == 'l' {
                             *display = prev_display;
                             return;
                         }
-                        display[row][col] = EMPTY;
+                        display[row][col] = EMP;
                         display[row][col + 1] = 'a';
                     }
                 }
@@ -113,7 +114,7 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
 
         's' => {
             // bring down piece until new piece is created
-            while display[0][display[0].len() / 2] == EMPTY {
+            while display[0][display[0].len() / 2] == EMP {
                 gravity(display, active_piece);
             }
         }
@@ -140,13 +141,13 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
                     if display[row][col] == 'l' {
                         continue;
                     }
-                    display[row][col] = EMPTY;
+                    display[row][col] = EMP;
                 }
             }
 
             for row in active_piece.row..active_piece.row + 4 {
                 for col in active_piece.col..active_piece.col + 4 {
-                    if display[row][col] != EMPTY && active_piece.shape[row - active_piece.row][col - active_piece.col] != EMPTY {
+                    if display[row][col] == 'l' && active_piece.shape[row - active_piece.row][col - active_piece.col] == 'l' {
                         *display = prev_display;
                         return;
                     }
@@ -163,7 +164,7 @@ pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) ->
     let half_width = display[0].len() / 2;
 
     // game over
-    if display[0][half_width] != EMPTY {
+    if display[0][half_width] != EMP {
         return true;
     }
 
@@ -258,7 +259,7 @@ pub fn full_line(display: &mut Vec<Vec<char>>) {
             }
         }
         display.remove(row);
-        display.insert(0, vec![EMPTY; display[0].len()]); // add new line at the top
+        display.insert(0, vec![EMP; display[0].len()]); // add new line at the top
     }
 }
 
@@ -267,4 +268,37 @@ fn getrandom() -> usize {
     let mut bytes = [0; 8];
     file.read_exact(&mut bytes).unwrap();
     usize::from_le_bytes(bytes)
+}
+
+pub fn ghost_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) {
+    for row in 0..display.len() {
+        for col in 0..display[row].len() {
+            if display[row][col] == 'g' {
+                display[row][col] = EMP;
+            }
+        }
+    }
+    
+    let mut ghost = display.clone();
+    let mut active_piece = active_piece.clone();
+
+    gravity_until_new_piece(&mut ghost, &mut active_piece);
+
+    for row in 0..ghost.len() {
+        for col in 0..ghost[row].len() {
+            if ghost[row][col] == 'a' && display[row][col] == EMP {
+                display[row][col] = 'g';
+            }
+        }
+    }
+}
+
+fn gravity_until_new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) {
+    let mut prev_display = display.clone();
+    gravity(display, active_piece);
+    while display[0][display[0].len() / 2] == EMP {
+        prev_display = display.clone();
+        gravity(display, active_piece);
+    }
+    *display = prev_display;
 }

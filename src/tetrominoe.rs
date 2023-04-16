@@ -1,9 +1,11 @@
-use crate::tetris_lib::EMPTY;
+use crate::tetris_lib::EMP;
 
+#[derive(Clone)]
 pub struct Tetrominoe {
     pub shape: Vec<Vec<char>>,
     pub row: usize,
     pub col: usize,
+    ptype: char
 }
 
 impl Tetrominoe {
@@ -12,45 +14,47 @@ impl Tetrominoe {
             shape: Vec::new(),
             row: 0,
             col: 0,
+            ptype: ' '
         }
     }
 
     pub fn set(&mut self, shape: char) {
+        self.ptype = shape;
         let shape = match shape {
-            'I' => vec![vec![EMPTY, 'a', EMPTY, EMPTY],
-                        vec![EMPTY, 'a', EMPTY, EMPTY],
-                        vec![EMPTY, 'a', EMPTY, EMPTY],
-                        vec![EMPTY, 'a', EMPTY, EMPTY]],
+            'I' => vec![vec![EMP, 'a', EMP, EMP],
+                        vec![EMP, 'a', EMP, EMP],
+                        vec![EMP, 'a', EMP, EMP],
+                        vec![EMP, 'a', EMP, EMP]],
 
-            'J' => vec![vec![EMPTY, 'a', EMPTY, EMPTY],
-                        vec![EMPTY, 'a', EMPTY, EMPTY],
-                        vec!['a', 'a', EMPTY, EMPTY],
-                        vec![EMPTY, EMPTY, EMPTY, EMPTY]],
+            'J' => vec![vec![EMP, 'a', EMP, EMP],
+                        vec![EMP, 'a', EMP, EMP],
+                        vec!['a', 'a', EMP, EMP],
+                        vec![EMP, EMP, EMP, EMP]],
 
-            'L' => vec![vec![EMPTY, 'a', EMPTY, EMPTY],
-                        vec![EMPTY, 'a', EMPTY, EMPTY],
-                        vec![EMPTY, 'a', 'a', EMPTY],
-                        vec![EMPTY, EMPTY, EMPTY, EMPTY]],
+            'L' => vec![vec![EMP, 'a', EMP, EMP],
+                        vec![EMP, 'a', EMP, EMP],
+                        vec![EMP, 'a', 'a', EMP],
+                        vec![EMP, EMP, EMP, EMP]],
 
-            'O' => vec![vec![EMPTY, EMPTY, EMPTY, EMPTY],
-                        vec![EMPTY, 'a', 'a', EMPTY],
-                        vec![EMPTY, 'a', 'a', EMPTY],
-                        vec![EMPTY, EMPTY, EMPTY, EMPTY]],
+            'O' => vec![vec![EMP, EMP, EMP, EMP],
+                        vec![EMP, 'a', 'a', EMP],
+                        vec![EMP, 'a', 'a', EMP],
+                        vec![EMP, EMP, EMP, EMP]],
 
-            'S' => vec![vec![EMPTY, EMPTY, EMPTY, EMPTY],
-                        vec!['a', 'a', EMPTY, EMPTY],
-                        vec![EMPTY, 'a', 'a', EMPTY],
-                        vec![EMPTY, EMPTY, EMPTY, EMPTY]],
+            'S' => vec![vec![EMP, EMP, EMP, EMP],
+                        vec!['a', 'a', EMP, EMP],
+                        vec![EMP, 'a', 'a', EMP],
+                        vec![EMP, EMP, EMP, EMP]],
 
-            'T' => vec![vec![EMPTY, 'a', EMPTY, EMPTY],
-                        vec!['a', 'a', 'a', EMPTY],
-                        vec![EMPTY, EMPTY, EMPTY, EMPTY],
-                        vec![EMPTY, EMPTY, EMPTY, EMPTY]],
-
-            'Z' => vec![vec![EMPTY, EMPTY, EMPTY, EMPTY],
-                        vec![EMPTY, 'a', 'a', EMPTY],
-                        vec!['a', 'a', EMPTY, EMPTY],
-                        vec![EMPTY, EMPTY, EMPTY, EMPTY]],
+            'T' => vec![vec![EMP, EMP, EMP, EMP],
+                        vec![EMP, 'a', EMP, EMP],
+                        vec!['a', 'a', 'a', EMP],
+                        vec![EMP, EMP, EMP, EMP]],
+                        
+            'Z' => vec![vec![EMP, EMP, EMP, EMP],
+                        vec![EMP, 'a', 'a', EMP],
+                        vec!['a', 'a', EMP, EMP],
+                        vec![EMP, EMP, EMP, EMP]],
                         
             _ => panic!("Unknown shape: {}", shape),
         };
@@ -63,21 +67,20 @@ impl Tetrominoe {
     }
 
     pub fn rotate(&mut self) {
-
-        // transpose or swap rows and columns
-        let n = self.shape.len();
-        for i in 0..n {
-            for j in i..n {
-                let temp = self.shape[i][j];
-                self.shape[i][j] = self.shape[j][i];
-                self.shape[j][i] = temp;
-            }
-        }
-        
-        // reverse each row to rotate
-        for i in 0..n {
-            self.shape[i].reverse();
-        }
+         // transpose or swap rows and columns
+         let n = self.shape.len();
+         for i in 0..n {
+             for j in i..n {
+                 let temp = self.shape[i][j];
+                 self.shape[i][j] = self.shape[j][i];
+                 self.shape[j][i] = temp;
+             }
+         }
+         
+         // reverse each row to rotate
+         for i in 0..n {
+             self.shape[i].reverse();
+         }
     }
     
 }
