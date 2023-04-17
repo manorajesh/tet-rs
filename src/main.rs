@@ -66,7 +66,7 @@ fn main() {
         }
 
         // gravity
-        if counter == 5 {
+        if counter == 10 - gamescore.level {
             if gravity(&mut display, &mut active_piece) {
                 break;
             }
