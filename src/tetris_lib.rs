@@ -1,4 +1,3 @@
-use core::panic;
 use std::fs::File;
 use std::io::Read;
 
@@ -19,7 +18,7 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore) {
                 &EMP => print!(" ."),
                 'a' => print!("[]"),
                 'l' => print!("[]"),
-                'g' => print!("=="),
+                'g' => print!("{}//{}", termion::color::Fg(termion::color::LightBlack), termion::color::Fg(termion::color::Reset)),
                 _ => panic!("unknown character: {}", ch),
             }
         }
@@ -30,9 +29,12 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore) {
     print!("Score: {}", score.score);
     print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 3));
     print!("Level: {}", score.level);
+    print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 5));
+    let time = score.get_time();
+    print!("Time: {}:{:02}", time / 60, time % 60);
 }
 
-pub fn init(width: i32, height: i32) -> Vec<Vec<char>> {
+pub fn init(width: usize, height: usize) -> Vec<Vec<char>> {
     let mut display: Vec<Vec<char>> = Vec::new();
 
     // generation
@@ -131,6 +133,8 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
 
         'u' => {
             let prev_display = display.clone();
+            let prev_piece = active_piece.clone();
+
             // rotate piece
             active_piece.rotate();
             if active_piece.row + 4 > display.len() {
@@ -153,11 +157,15 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
 
             for row in active_piece.row..active_piece.row + 4 {
                 for col in active_piece.col..active_piece.col + 4 {
-                    if display[row][col] == 'l' && active_piece.shape[row - active_piece.row][col - active_piece.col] == 'l' {
+                    if display[row][col] == 'l' {
                         *display = prev_display;
+                        *active_piece = prev_piece;
                         return;
                     }
-                    display[row][col] = active_piece.shape[row - active_piece.row][col - active_piece.col];
+
+                    if active_piece.shape[row - active_piece.row][col - active_piece.col] == 'a' {
+                        display[row][col] = active_piece.shape[row - active_piece.row][col - active_piece.col];
+                    }
                 }
             }
         }
