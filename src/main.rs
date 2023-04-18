@@ -3,10 +3,11 @@
 mod tetrominoe;
 mod tetlib;
 mod gamescore;
+mod musicplayer;
 
 use std::{
     io::{stdout, Write},
-    thread::sleep,
+    thread::{sleep, spawn},
     time::Duration,
 };
 
@@ -16,8 +17,13 @@ use termion::input::TermRead;
 use tetlib::*;
 use tetrominoe::Tetrominoe;
 use gamescore::GameScore;
+use musicplayer::MusicPlayer;
 
 fn main() {
+    // music playback
+    let mut musicplayer = MusicPlayer::new();
+    musicplayer.start("music/korobeiniki.mp3");
+
     let mut stdin = termion::async_stdin().keys();
     // let mut stdin = std::io::stdin().keys();
     let mut stdout = stdout().into_raw_mode().unwrap();
@@ -73,5 +79,9 @@ fn main() {
         counter += 1;
     }
 
+    // stop music
+    musicplayer.stop();
+    
+    // Print prompt below game
     print!("{}{}\r\n", termion::cursor::Show, termion::cursor::Goto(1, (HEIGHT+3) as u16));
 }

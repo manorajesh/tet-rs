@@ -1,8 +1,11 @@
 use std::fs::File;
+use std::io::BufReader;
 use std::io::Read;
 
 use termion::event::Key;
 use termion::input::Keys;
+
+use rodio::{Decoder, OutputStream, source::Source};
 
 use crate::tetrominoe::Tetrominoe;
 use crate::gamescore::GameScore;
@@ -338,4 +341,24 @@ pub fn get_input<T: Read>(stdin: &mut Keys<T>) -> char {
     };
 
     key
+}
+
+pub fn play_music(path: &str) {
+    // Get a output stream handle to the default physical sound device
+    let (_stream, stream_handle) = OutputStream::try_default().expect("Failed to get output stream");
+
+    // Load a sound from a file or raw bytes
+    let file = BufReader::new(File::open(path).unwrap());
+    
+    // Decode that sound file into a source
+    let source = Decoder::new(file).unwrap();
+
+    // Play the sound directly on the device (async)
+    stream_handle.play_raw(source.convert_samples().repeat_infinite()).expect("Failed to play sound");
+
+    // Keep function running until program is closed
+    loop {
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+
 }
