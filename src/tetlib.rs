@@ -1,6 +1,9 @@
 use std::fs::File;
 use std::io::Read;
 
+use termion::event::Key;
+use termion::input::Keys;
+
 use crate::tetrominoe::Tetrominoe;
 use crate::gamescore::GameScore;
 
@@ -317,4 +320,22 @@ fn gravity_until_new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetr
         gravity(display, active_piece);
     }
     *display = prev_display;
+}
+
+pub fn get_input<T: Read>(stdin: &mut Keys<T>) -> char {
+    let key = if let Some(Ok(key)) = stdin.next() {
+        match key {
+            Key::Char('q') => 'q', // quit
+            Key::Left => 'l',      // left
+            Key::Right => 'r',     // right
+            Key::Char(' ') => 's', // down with spacebar
+            Key::Down => 'd',      // down
+            Key::Up => 'u',        // rotate
+            _ => ' ',
+        }
+    } else {
+        ' '
+    };
+
+    key
 }

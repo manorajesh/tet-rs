@@ -1,4 +1,4 @@
-use crate::tetris_lib::EMP;
+use crate::tetlib::EMP;
 
 #[derive(Clone)]
 pub struct Tetrominoe {

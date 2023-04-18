@@ -1,7 +1,7 @@
 // Tetris
 
 mod tetrominoe;
-mod tetris_lib;
+mod tetlib;
 mod gamescore;
 
 use std::{
@@ -10,11 +10,10 @@ use std::{
     time::Duration,
 };
 
-use termion::event::Key;
-use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+use termion::input::TermRead;
 
-use tetris_lib::*;
+use tetlib::*;
 use tetrominoe::Tetrominoe;
 use gamescore::GameScore;
 
@@ -38,20 +37,9 @@ fn main() {
     // main loop
     loop {
         let prev_display = display.clone();
+
         // handle input
-        let key = if let Some(Ok(key)) = stdin.next() {
-            match key {
-                Key::Char('q') => 'q', // quit
-                Key::Left => 'l',      // left
-                Key::Right => 'r',     // right
-                Key::Char(' ') => 's', // down with spacebar
-                Key::Down => 'd',      // down
-                Key::Up => 'u',        // rotate
-                _ => ' ',
-            }
-        } else {
-            ' '
-        };
+        let key = get_input(&mut stdin);
 
         // quit
         if key == 'q' {
