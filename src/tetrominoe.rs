@@ -5,7 +5,7 @@ pub struct Tetrominoe {
     pub shape: Vec<Vec<char>>,
     pub row: usize,
     pub col: usize,
-    ptype: char,
+    pub ptype: char,
     state: usize,
 }
 

@@ -3,11 +3,10 @@
 mod tetrominoe;
 mod tetlib;
 mod gamescore;
-mod musicplayer;
 
 use std::{
     io::{stdout, Write},
-    thread::{sleep, spawn},
+    thread::sleep,
     time::Duration,
 };
 
@@ -17,13 +16,8 @@ use termion::input::TermRead;
 use tetlib::*;
 use tetrominoe::Tetrominoe;
 use gamescore::GameScore;
-use musicplayer::MusicPlayer;
 
 fn main() {
-    // music playback
-    let mut musicplayer = MusicPlayer::new();
-    musicplayer.start("music/korobeiniki.mp3");
-
     let mut stdin = termion::async_stdin().keys();
     // let mut stdin = std::io::stdin().keys();
     let mut stdout = stdout().into_raw_mode().unwrap();
@@ -34,9 +28,9 @@ fn main() {
     let mut display: Vec<Vec<char>> = init(WIDTH, HEIGHT);
     let mut active_piece = Tetrominoe::new();
     let mut gamescore = GameScore::new();
-
+    let mut hold_piece: Option<char> = None;
     print!("{}", termion::cursor::Hide);
-    new_piece(&mut display, &mut active_piece);
+    new_piece(&mut display, &mut active_piece, None);
 
     let mut counter: usize = 0;
 
@@ -61,7 +55,7 @@ fn main() {
         }
 
         // handle input
-        handle_input(&mut display, key, &mut active_piece);
+        handle_input(&mut display, key, &mut active_piece, &mut hold_piece);
 
         // full line
         full_line(&mut display, &mut gamescore);
@@ -73,14 +67,11 @@ fn main() {
         let is_updated = display != prev_display;
 
         // render
-        render(&mut display, is_updated, &gamescore);
+        render(&mut display, is_updated, &gamescore, &hold_piece);
         sleep(Duration::from_millis(50));
         stdout.flush().unwrap();
         counter += 1;
     }
-
-    // stop music
-    musicplayer.stop();
     
     // Print prompt below game
     print!("{}{}\r\n", termion::cursor::Show, termion::cursor::Goto(1, (HEIGHT+3) as u16));

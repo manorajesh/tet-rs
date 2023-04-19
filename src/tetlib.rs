@@ -1,18 +1,15 @@
 use std::fs::File;
-use std::io::BufReader;
 use std::io::Read;
 
 use termion::event::Key;
 use termion::input::Keys;
-
-use rodio::{Decoder, OutputStream, source::Source};
 
 use crate::tetrominoe::Tetrominoe;
 use crate::gamescore::GameScore;
 
 pub const EMP: char = '.';
 
-pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore) {
+pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hold_piece: &Option<char>) {
     if !is_updated {
         return;
     }
@@ -31,6 +28,14 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore) {
         print!("{}", termion::cursor::Goto(3, (c + 2) as u16));
     }
 
+    // hold piece
+    print!("{}", termion::cursor::Goto(1, (display.len() + 3) as u16));
+    print!("Hold: {}", match hold_piece {
+        Some(ch) => ch,
+        None => &EMP,
+    });
+
+    // print stats
     print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 1));
     print!("Score: {}", score.score);
     print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 3));
@@ -75,7 +80,7 @@ pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) -> b
                 if row == display.len() - 1 || display[row + 1][col] == 'l' {
                     *display = prev_display;
                     landed(display);
-                    let game_over = new_piece(display, active_piece);
+                    let game_over = new_piece(display, active_piece, None);
                     return game_over;
                 }
 
@@ -88,7 +93,7 @@ pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) -> b
     false
 }
 
-pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut Tetrominoe) {
+pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut Tetrominoe, hold_piece: &mut Option<char>) {
     let prev_display = display.clone();
     match key {
         'l' => {
@@ -138,7 +143,7 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
         }
 
         'u' => {
-            let prev_display = display.clone();
+            // let prev_display = display.clone();
             let prev_piece = active_piece.clone();
 
             // rotate piece
@@ -152,12 +157,11 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
             }
 
             // clear piece and replace with new rotated piece
-            for row in active_piece.row..active_piece.row + 4 {
-                for col in active_piece.col..active_piece.col + 4 {
-                    if display[row][col] == 'l' {
-                        continue;
+            for row in 0..display.len() {
+                for col in 0..display[row].len() {
+                    if display[row][col] == 'a' {
+                        display[row][col] = EMP;
                     }
-                    display[row][col] = EMP;
                 }
             }
 
@@ -176,11 +180,32 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
             }
         }
 
+        'c' => {
+            // clear piece
+            for row in display.iter_mut() {
+                for col in row.iter_mut() {
+                    if *col == 'a' {
+                        *col = EMP;
+                    }
+                }
+            }
+
+            // hold piece
+            if let Some(hold) = hold_piece {
+                let prev_piece = active_piece.clone();
+                new_piece(display, active_piece, Some(*hold));
+                *hold_piece = Some(prev_piece.ptype);
+            } else {
+                *hold_piece = Some(active_piece.ptype);
+                new_piece(display, active_piece, None);
+            }
+        }
+
         _ => (),
     }
 }
 
-pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) -> bool {
+pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, desired_piece: Option<char>) -> bool {
     let half_width = display[0].len() / 2;
 
     // game over
@@ -191,7 +216,7 @@ pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) ->
     let pieces = vec!['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
     // let pieces = vec!['Z', 'S'];
 
-    let piece = pieces[getrandom() % pieces.len()];
+    let piece = desired_piece.unwrap_or(pieces[getrandom() % pieces.len()]);
     match piece {
         'I' => {
             // I
@@ -334,6 +359,7 @@ pub fn get_input<T: Read>(stdin: &mut Keys<T>) -> char {
             Key::Char(' ') => 's', // down with spacebar
             Key::Down => 'd',      // down
             Key::Up => 'u',        // rotate
+            Key::Char('c') => 'c', // hold
             _ => ' ',
         }
     } else {
@@ -341,24 +367,4 @@ pub fn get_input<T: Read>(stdin: &mut Keys<T>) -> char {
     };
 
     key
-}
-
-pub fn play_music(path: &str) {
-    // Get a output stream handle to the default physical sound device
-    let (_stream, stream_handle) = OutputStream::try_default().expect("Failed to get output stream");
-
-    // Load a sound from a file or raw bytes
-    let file = BufReader::new(File::open(path).unwrap());
-    
-    // Decode that sound file into a source
-    let source = Decoder::new(file).unwrap();
-
-    // Play the sound directly on the device (async)
-    stream_handle.play_raw(source.convert_samples().repeat_infinite()).expect("Failed to play sound");
-
-    // Keep function running until program is closed
-    loop {
-        std::thread::sleep(std::time::Duration::from_millis(100));
-    }
-
 }
