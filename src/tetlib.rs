@@ -9,7 +9,7 @@ use crate::gamescore::GameScore;
 
 pub const EMP: char = '.';
 
-pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hold_piece: &Option<char>) {
+pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hold_piece: &Option<Tetrominoe>) {
     if !is_updated {
         return;
     }
@@ -29,11 +29,23 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hol
     }
 
     // hold piece
-    print!("{}", termion::cursor::Goto(1, (display.len() + 3) as u16));
-    print!("Hold: {}", match hold_piece {
-        Some(ch) => ch,
-        None => &EMP,
-    });
+    print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 7));
+    match hold_piece {
+        Some(piece) => {
+            for row in 0..piece.shape.len() {
+                for col in 0..piece.shape[row].len() {
+                    if piece.shape[row][col] == 'a' {
+                        print!("[]");
+                    } else {
+                        print!("  ");
+                    }
+                }
+                print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, (row + 8) as u16));
+            }
+        }
+
+        None => print!("Hold:"),
+    }
 
     // print stats
     print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 1));
@@ -93,7 +105,7 @@ pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) -> b
     false
 }
 
-pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut Tetrominoe, hold_piece: &mut Option<char>) {
+pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut Tetrominoe) {
     let prev_display = display.clone();
     match key {
         'l' => {
@@ -177,27 +189,6 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
                         display[row][col] = active_piece.shape[row - active_piece.row][col - active_piece.col];
                     }
                 }
-            }
-        }
-
-        'c' => {
-            // clear piece
-            for row in display.iter_mut() {
-                for col in row.iter_mut() {
-                    if *col == 'a' {
-                        *col = EMP;
-                    }
-                }
-            }
-
-            // hold piece
-            if let Some(hold) = hold_piece {
-                let prev_piece = active_piece.clone();
-                new_piece(display, active_piece, Some(*hold));
-                *hold_piece = Some(prev_piece.ptype);
-            } else {
-                *hold_piece = Some(active_piece.ptype);
-                new_piece(display, active_piece, None);
             }
         }
 
@@ -367,4 +358,25 @@ pub fn get_input<T: Read>(stdin: &mut Keys<T>) -> char {
     };
 
     key
+}
+
+pub fn hold(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, hold_piece: &mut Option<Tetrominoe>) {
+    // clear piece
+    for row in display.iter_mut() {
+        for col in row.iter_mut() {
+            if *col == 'a' {
+                *col = EMP;
+            }
+        }
+    }
+
+    // hold piece
+    if let Some(hold) = hold_piece {
+        let prev_piece = active_piece.clone();
+        new_piece(display, active_piece, Some(hold.ptype));
+        *hold_piece = Some(prev_piece);
+    } else {
+        *hold_piece = Some(active_piece.clone());
+        new_piece(display, active_piece, None);
+    }
 }

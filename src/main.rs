@@ -28,7 +28,7 @@ fn main() {
     let mut display: Vec<Vec<char>> = init(WIDTH, HEIGHT);
     let mut active_piece = Tetrominoe::new();
     let mut gamescore = GameScore::new();
-    let mut hold_piece: Option<char> = None;
+    let mut hold_piece: Option<Tetrominoe> = None;
     print!("{}", termion::cursor::Hide);
     new_piece(&mut display, &mut active_piece, None);
 
@@ -55,7 +55,12 @@ fn main() {
         }
 
         // handle input
-        handle_input(&mut display, key, &mut active_piece, &mut hold_piece);
+        handle_input(&mut display, key, &mut active_piece);
+
+        // hold piece
+        if key == 'c' {
+            hold(&mut display, &mut active_piece, &mut hold_piece);
+        }
 
         // full line
         full_line(&mut display, &mut gamescore);
