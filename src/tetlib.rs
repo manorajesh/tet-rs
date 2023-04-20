@@ -1,4 +1,3 @@
-use std::fs::File;
 use std::io::Read;
 
 use termion::event::Key;
@@ -9,12 +8,12 @@ use crate::gamescore::GameScore;
 
 pub const EMP: char = '.';
 
-pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hold_piece: &Option<Tetrominoe>) {
+pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hold_piece: &Option<Tetrominoe>, next_piece: &Tetrominoe) {
     if !is_updated {
         return;
     }
 
-    print!("{}", termion::cursor::Goto(12, 1)); // clear screen and move cursor to top left
+    print!("{}", termion::cursor::Goto(13, 1)); // clear screen and move cursor to top left
     for (c, row) in display.iter().enumerate() {
         for ch in row {
             match ch {
@@ -25,12 +24,12 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hol
                 _ => panic!("unknown character: {}", ch),
             }
         }
-        print!("{}", termion::cursor::Goto(12, (c + 2) as u16));
+        print!("{}", termion::cursor::Goto(13, (c + 2) as u16));
     }
 
     // hold piece
-    print!("{}", termion::cursor::Goto(1, 1));
-    print!("Hold:{}", termion::cursor::Goto(1, 3));
+    print!("{}", termion::cursor::Goto(2, 1));
+    print!("Hold:{}", termion::cursor::Goto(2, 3));
     match hold_piece {
         Some(piece) => {
             let mut blank = Tetrominoe::new();
@@ -43,7 +42,7 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hol
                         print!("  ");
                     }
                 }
-                print!("{}", termion::cursor::Goto(1, (row + 4) as u16));
+                print!("{}", termion::cursor::Goto(2, (row + 4) as u16));
             }
         }
 
@@ -58,6 +57,21 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hol
     print!("{}", termion::cursor::Goto((display.len() * 2) as u16, 5));
     let time = score.get_time();
     print!("Time: {}:{:02}", time / 60, time % 60);
+
+    // next piece
+    print!("{}", termion::cursor::Goto((display.len() * 2) as u16, 8));
+    print!("Next:{}", termion::cursor::Goto((display.len() * 2) as u16, 10));
+    for row in 0..next_piece.shape.len() {
+        for col in 0..next_piece.shape[row].len() {
+            if next_piece.shape[row][col] == 'a' {
+                print!("[]");
+            } else {
+                print!("  ");
+            }
+        }
+        print!("{}", termion::cursor::Goto((display.len() * 2) as u16, (row + 11) as u16));
+    }
+
 }
 
 pub fn init(width: usize, height: usize) -> Vec<Vec<char>> {
@@ -73,21 +87,21 @@ pub fn init(width: usize, height: usize) -> Vec<Vec<char>> {
     }
 
     // walls
-    print!("{}{}", termion::clear::All, termion::cursor::Goto(10, 1)); // clear screen and move cursor to top left while leaving space for hold
+    print!("{}{}", termion::clear::All, termion::cursor::Goto(11, 1)); // clear screen and move cursor to top left while leaving space for hold
     for row in display.iter().enumerate() {
         print!("<!"); // left wall
         for _ in row.1 {
             print!("  ");
         }
         print!("!>"); // right wall
-        print!("{}", termion::cursor::Goto(10, (row.0 + 2) as u16));
+        print!("{}", termion::cursor::Goto(11, (row.0 + 2) as u16));
     }
     print!("<!{}!>\r\n", "=".repeat(display[0].len() * 2)); // bottom wall
-    print!("{}{}", " ".repeat(11), "\\/".repeat(display[0].len())); // bottom spikes
+    print!("{}{}", " ".repeat(12), "\\/".repeat(display[0].len())); // bottom spikes
     display
 }
 
-pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) -> bool {
+pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, next_piece: &mut Tetrominoe) -> bool {
     let prev_display = display.clone();
     for row in (0..display.len()).rev() {
         for col in 0..display[row].len() {
@@ -95,7 +109,7 @@ pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) -> b
                 if row == display.len() - 1 || display[row + 1][col] == 'l' {
                     *display = prev_display;
                     landed(display);
-                    let game_over = new_piece(display, active_piece, None);
+                    let game_over = new_piece(display, active_piece, None, next_piece);
                     return game_over;
                 }
 
@@ -108,7 +122,7 @@ pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) -> b
     false
 }
 
-pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut Tetrominoe) {
+pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut Tetrominoe, next_piece: &mut Tetrominoe) {
     let prev_display = display.clone();
     match key {
         'l' => {
@@ -149,12 +163,12 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
         's' => {
             // bring down piece until new piece is created
             while display[0][display[0].len() / 2] == EMP {
-                gravity(display, active_piece);
+                gravity(display, active_piece, next_piece);
             }
         }
 
         'd' => {
-            gravity(display, active_piece);
+            gravity(display, active_piece, next_piece);
         }
 
         'u' => {
@@ -199,7 +213,7 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
     }
 }
 
-pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, desired_piece: Option<char>) -> bool {
+pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, desired_piece: Option<char>, next_piece: &mut Tetrominoe) -> bool {
     let half_width = display[0].len() / 2;
 
     // game over
@@ -207,10 +221,7 @@ pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, de
         return true;
     }
 
-    let pieces = vec!['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
-    // let pieces = vec!['Z', 'S'];
-
-    let piece = desired_piece.unwrap_or(pieces[getrandom() % pieces.len()]);
+    let piece = desired_piece.unwrap_or(get_next_piece(next_piece));
     match piece {
         'I' => {
             // I
@@ -291,6 +302,7 @@ pub fn landed(display: &mut Vec<Vec<char>>) {
 }
 
 pub fn full_line(display: &mut Vec<Vec<char>>, score: &mut GameScore) {
+    let mut lines = 0;
     'outer: for row in (0..display.len()).rev() {
         for ch in &display[row] {
             if *ch != 'l' {
@@ -299,16 +311,16 @@ pub fn full_line(display: &mut Vec<Vec<char>>, score: &mut GameScore) {
         }
         display.remove(row);
         display.insert(0, vec![EMP; display[0].len()]); // add new line at the top
-        score.score += 100;
-        score.level += score.score / 1000;
+        lines += 1;
     }
-}
 
-fn getrandom() -> usize {
-    let mut file = File::open("/dev/urandom").expect("failed to open /dev/urandom");
-    let mut bytes = [0; 8];
-    file.read_exact(&mut bytes).unwrap();
-    usize::from_le_bytes(bytes)
+    match lines {
+        1 => score.score += 40 * (score.level+1),
+        2 => score.score += 100 * (score.level+1),
+        3 => score.score += 300 * (score.level+1),
+        4 => score.score += 1200 * (score.level+1),
+        _ => (),
+    }
 }
 
 pub fn ghost_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) {
@@ -336,10 +348,10 @@ pub fn ghost_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) 
 
 fn gravity_until_new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) {
     let mut prev_display = display.clone();
-    gravity(display, active_piece);
+    gravity(display, active_piece, &mut Tetrominoe::random());
     while display[0][display[0].len() / 2] == EMP {
         prev_display = display.clone();
-        gravity(display, active_piece);
+        gravity(display, active_piece, &mut Tetrominoe::random());
     }
     *display = prev_display;
 }
@@ -363,7 +375,7 @@ pub fn get_input<T: Read>(stdin: &mut Keys<T>) -> char {
     key
 }
 
-pub fn hold(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, hold_piece: &mut Option<Tetrominoe>) {
+pub fn hold(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, hold_piece: &mut Option<Tetrominoe>, next_piece: &mut Tetrominoe) {
     // clear piece
     for row in display.iter_mut() {
         for col in row.iter_mut() {
@@ -376,10 +388,16 @@ pub fn hold(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, hold_pi
     // hold piece
     if let Some(hold) = hold_piece {
         let prev_piece = active_piece.clone();
-        new_piece(display, active_piece, Some(hold.ptype));
+        new_piece(display, active_piece, Some(hold.ptype), next_piece);
         *hold_piece = Some(prev_piece);
     } else {
         *hold_piece = Some(active_piece.clone());
-        new_piece(display, active_piece, None);
+        new_piece(display, active_piece, None, next_piece);
     }
+}
+
+fn get_next_piece(next_piece: &mut Tetrominoe) -> char {
+    let temp = next_piece.ptype;
+    *next_piece = Tetrominoe::random(); 
+    temp
 }

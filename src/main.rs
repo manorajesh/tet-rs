@@ -29,8 +29,9 @@ fn main() {
     let mut active_piece = Tetrominoe::new();
     let mut gamescore = GameScore::new();
     let mut hold_piece: Option<Tetrominoe> = None;
+    let mut next_piece = Tetrominoe::random();
     print!("{}", termion::cursor::Hide);
-    new_piece(&mut display, &mut active_piece, None);
+    new_piece(&mut display, &mut active_piece, None, &mut next_piece);
 
     let mut counter: usize = 0;
 
@@ -48,18 +49,18 @@ fn main() {
 
         // gravity
         if counter == 10 - gamescore.level {
-            if gravity(&mut display, &mut active_piece) {
+            if gravity(&mut display, &mut active_piece, &mut next_piece) {
                 break;
             }
             counter = 0;
         }
 
         // handle input
-        handle_input(&mut display, key, &mut active_piece);
+        handle_input(&mut display, key, &mut active_piece, &mut next_piece);
 
         // hold piece
         if key == 'c' {
-            hold(&mut display, &mut active_piece, &mut hold_piece);
+            hold(&mut display, &mut active_piece, &mut hold_piece, &mut next_piece);
         }
 
         // full line
@@ -72,7 +73,7 @@ fn main() {
         let is_updated = display != prev_display;
 
         // render
-        render(&mut display, is_updated, &gamescore, &hold_piece);
+        render(&mut display, is_updated, &gamescore, &hold_piece, &next_piece);
         sleep(Duration::from_millis(50));
         stdout.flush().unwrap();
         counter += 1;

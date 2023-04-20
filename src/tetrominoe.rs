@@ -1,3 +1,5 @@
+use std::{fs::File, io::Read};
+
 use crate::tetlib::EMP;
 
 #[derive(Clone)]
@@ -126,5 +128,31 @@ impl Tetrominoe {
         _ => panic!("Unknown shape: {}", self.ptype),
     }
 }
+
+pub fn from(ptype: char) -> Tetrominoe {
+    Tetrominoe::new().set(ptype).clone()
+}
+
+pub fn random() -> Tetrominoe {
+    let ptype = match getrandom() % 7 {
+        0 => 'I',
+        1 => 'J',
+        2 => 'L',
+        3 => 'O',
+        4 => 'Z',
+        5 => 'T',
+        6 => 'S',
+        _ => panic!("Invalid random number"),
+    };
+    Tetrominoe::from(ptype)
+}
+
+}
     
+
+fn getrandom() -> usize {
+    let mut file = File::open("/dev/urandom").expect("failed to open /dev/urandom");
+    let mut bytes = [0; 8];
+    file.read_exact(&mut bytes).unwrap();
+    usize::from_le_bytes(bytes)
 }
