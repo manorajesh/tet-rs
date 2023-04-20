@@ -14,7 +14,7 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hol
         return;
     }
 
-    print!("{}", termion::cursor::Goto(3, 1)); // clear screen and move cursor to top left
+    print!("{}", termion::cursor::Goto(12, 1)); // clear screen and move cursor to top left
     for (c, row) in display.iter().enumerate() {
         for ch in row {
             match ch {
@@ -25,34 +25,37 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hol
                 _ => panic!("unknown character: {}", ch),
             }
         }
-        print!("{}", termion::cursor::Goto(3, (c + 2) as u16));
+        print!("{}", termion::cursor::Goto(12, (c + 2) as u16));
     }
 
     // hold piece
-    print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 7));
+    print!("{}", termion::cursor::Goto(1, 1));
+    print!("Hold:{}", termion::cursor::Goto(1, 3));
     match hold_piece {
         Some(piece) => {
-            for row in 0..piece.shape.len() {
-                for col in 0..piece.shape[row].len() {
-                    if piece.shape[row][col] == 'a' {
+            let mut blank = Tetrominoe::new();
+            let upright = blank.set(piece.ptype);
+            for row in 0..upright.shape.len() {
+                for col in 0..upright.shape[row].len() {
+                    if upright.shape[row][col] == 'a' {
                         print!("[]");
                     } else {
                         print!("  ");
                     }
                 }
-                print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, (row + 8) as u16));
+                print!("{}", termion::cursor::Goto(1, (row + 4) as u16));
             }
         }
 
-        None => print!("Hold:"),
+        None => (),
     }
 
     // print stats
-    print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 1));
+    print!("{}", termion::cursor::Goto((display.len() * 2) as u16, 1));
     print!("Score: {}", score.score);
-    print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 3));
+    print!("{}", termion::cursor::Goto((display.len() * 2) as u16, 3));
     print!("Level: {}", score.level);
-    print!("{}", termion::cursor::Goto((display.len() * 2-10) as u16, 5));
+    print!("{}", termion::cursor::Goto((display.len() * 2) as u16, 5));
     let time = score.get_time();
     print!("Time: {}:{:02}", time / 60, time % 60);
 }
@@ -70,17 +73,17 @@ pub fn init(width: usize, height: usize) -> Vec<Vec<char>> {
     }
 
     // walls
-    print!("{}{}", termion::clear::All, termion::cursor::Goto(1, 1)); // clear screen and move cursor to top left
-    for row in &display {
+    print!("{}{}", termion::clear::All, termion::cursor::Goto(10, 1)); // clear screen and move cursor to top left while leaving space for hold
+    for row in display.iter().enumerate() {
         print!("<!"); // left wall
-        for _ in row {
+        for _ in row.1 {
             print!("  ");
         }
         print!("!>"); // right wall
-        print!("\r\n");
+        print!("{}", termion::cursor::Goto(10, (row.0 + 2) as u16));
     }
     print!("<!{}!>\r\n", "=".repeat(display[0].len() * 2)); // bottom wall
-    print!("  {}", "\\/".repeat(display[0].len())); // bottom spikes
+    print!("{}{}", " ".repeat(11), "\\/".repeat(display[0].len())); // bottom spikes
     display
 }
 
@@ -342,7 +345,7 @@ fn gravity_until_new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetr
 }
 
 pub fn get_input<T: Read>(stdin: &mut Keys<T>) -> char {
-    let key = if let Some(Ok(key)) = stdin.next() {
+    let key = if let Some(Ok(key)) = stdin.last() {
         match key {
             Key::Char('q') => 'q', // quit
             Key::Left => 'l',      // left

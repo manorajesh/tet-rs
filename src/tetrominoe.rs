@@ -20,7 +20,7 @@ impl Tetrominoe {
         }
     }
 
-    pub fn set(&mut self, shape: char) {
+    pub fn set(&mut self, shape: char) -> &mut Self {
         self.ptype = shape;
         let shape = match shape {
             'I' => vec![vec![EMP, 'a', EMP, EMP],
@@ -62,6 +62,7 @@ impl Tetrominoe {
         };
         self.shape = shape;
         self.state = 0;
+        self
     }
 
     pub fn set_pos(&mut self, row: usize, col: usize) {
