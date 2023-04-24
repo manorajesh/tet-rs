@@ -302,7 +302,7 @@ pub fn landed(display: &mut Vec<Vec<char>>) {
 }
 
 pub fn full_line(display: &mut Vec<Vec<char>>, score: &mut GameScore) {
-    let mut lines = 0;
+    let mut lines: usize = 0;
     'outer: for row in (0..display.len()).rev() {
         for ch in &display[row] {
             if *ch != 'l' {
