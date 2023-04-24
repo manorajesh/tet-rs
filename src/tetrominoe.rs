@@ -1,5 +1,7 @@
 use std::{fs::File, io::Read};
 
+use rand::{Rng, thread_rng};
+
 use crate::tetlib::EMP;
 
 #[derive(Clone)]
@@ -134,10 +136,10 @@ pub fn from(ptype: char) -> Tetrominoe {
 }
 
 pub fn random() -> Tetrominoe {
-    let ptype = match getrandom() % 7 {
+    let ptype = match getrandom(7) {
         0 => 'I',
         1 => 'J',
-        2 => 'L',
+        2 => 'L',   
         3 => 'O',
         4 => 'Z',
         5 => 'T',
@@ -148,11 +150,7 @@ pub fn random() -> Tetrominoe {
 }
 
 }
-    
 
-fn getrandom() -> usize {
-    let mut file = File::open("/dev/urandom").expect("failed to open /dev/urandom");
-    let mut bytes = [0; 8];
-    file.read_exact(&mut bytes).unwrap();
-    usize::from_le_bytes(bytes)
+fn getrandom(end: usize) -> usize {
+    thread_rng().gen_range(0..end)
 }

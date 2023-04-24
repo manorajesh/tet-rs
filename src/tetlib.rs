@@ -1,35 +1,60 @@
-use std::io::Read;
+use crossterm::{
+    cursor::{MoveTo, Hide},
+    style::{Color, Print, ResetColor, SetForegroundColor},
+    terminal::{Clear, ClearType},
+    QueueableCommand, event::{KeyEventKind, poll},
+};
 
-use termion::event::Key;
-use termion::input::Keys;
+use crossterm::event::{self, Event, KeyCode, KeyEvent};
+
+use std::{io::{stdout, Write}, time::Duration};
 
 use crate::tetrominoe::Tetrominoe;
 use crate::gamescore::GameScore;
 
 pub const EMP: char = '.';
 
-pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hold_piece: &Option<Tetrominoe>, next_piece: &Tetrominoe) {
+pub fn render(
+    display: &Vec<Vec<char>>,
+    is_updated: bool,
+    score: &GameScore,
+    hold_piece: &Option<Tetrominoe>,
+    next_piece: &Tetrominoe,
+) {
     if !is_updated {
         return;
     }
 
-    print!("{}", termion::cursor::Goto(13, 1)); // clear screen and move cursor to top left
+    let mut stdout = stdout();
+    let width: u16 = display[0].len() as u16;
+
+    stdout.queue(MoveTo(width+3, 1)).unwrap(); // move cursor to top left
     for (c, row) in display.iter().enumerate() {
         for ch in row {
             match ch {
-                &EMP => print!(" ."),
-                'a' => print!("[]"),
-                'l' => print!("[]"),
-                'g' => print!("{}//{}", termion::color::Fg(termion::color::LightBlack), termion::color::Fg(termion::color::Reset)),
+                &EMP => {stdout.queue(Print(" .")).unwrap();},
+                'a' => {stdout.queue(Print("[]")).unwrap();},
+                'l' => {stdout.queue(Print("[]")).unwrap();},
+                'g' => {
+                    stdout
+                        .queue(SetForegroundColor(Color::Black))
+                        .unwrap()
+                        .queue(Print("//"))
+                        .unwrap()
+                        .queue(ResetColor)
+                        .unwrap();
+                }
+                    
                 _ => panic!("unknown character: {}", ch),
             }
         }
-        print!("{}", termion::cursor::Goto(13, (c + 2) as u16));
+        stdout.queue(MoveTo(width+3, (c + 2) as u16)).unwrap();
     }
 
     // hold piece
-    print!("{}", termion::cursor::Goto(2, 1));
-    print!("Hold:{}", termion::cursor::Goto(2, 3));
+    stdout.queue(MoveTo(2, 1)).unwrap();
+    stdout.queue(Print("Hold:")).unwrap();
+    stdout.queue(MoveTo(2, 3)).unwrap();
     match hold_piece {
         Some(piece) => {
             let mut blank = Tetrominoe::new();
@@ -37,12 +62,12 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hol
             for row in 0..upright.shape.len() {
                 for col in 0..upright.shape[row].len() {
                     if upright.shape[row][col] == 'a' {
-                        print!("[]");
+                        stdout.queue(Print("[]")).unwrap();
                     } else {
-                        print!("  ");
+                        stdout.queue(Print("  ")).unwrap();
                     }
                 }
-                print!("{}", termion::cursor::Goto(2, (row + 4) as u16));
+                stdout.queue(MoveTo(2, (row + 4) as u16)).unwrap();
             }
         }
 
@@ -50,28 +75,32 @@ pub fn render(display: &Vec<Vec<char>>, is_updated: bool, score: &GameScore, hol
     }
 
     // print stats
-    print!("{}", termion::cursor::Goto((display.len() * 2) as u16, 1));
-    print!("Score: {}", score.score);
-    print!("{}", termion::cursor::Goto((display.len() * 2) as u16, 3));
-    print!("Level: {}", score.level);
-    print!("{}", termion::cursor::Goto((display.len() * 2) as u16, 5));
+    stdout.queue(MoveTo(width * 4, 1)).unwrap();
+    stdout.queue(Print(format!("Score: {}", score.score))).unwrap();
+    stdout.queue(MoveTo(width * 4, 3)).unwrap();
+    stdout.queue(Print(format!("Level: {}", score.level))).unwrap();
+    stdout.queue(MoveTo(width * 4, 5)).unwrap();
     let time = score.get_time();
-    print!("Time: {}:{:02}", time / 60, time % 60);
+    stdout
+        .queue(Print(format!("Time: {}:{:02}", time / 60, time % 60)))
+        .unwrap();
 
     // next piece
-    print!("{}", termion::cursor::Goto((display.len() * 2) as u16, 8));
-    print!("Next:{}", termion::cursor::Goto((display.len() * 2) as u16, 10));
+    stdout.queue(MoveTo(width * 4, 8)).unwrap();
+    stdout.queue(Print("Next:")).unwrap();
+    stdout.queue(MoveTo(width * 4, 10)).unwrap();
     for row in 0..next_piece.shape.len() {
         for col in 0..next_piece.shape[row].len() {
             if next_piece.shape[row][col] == 'a' {
-                print!("[]");
+                stdout.queue(Print("[]")).unwrap();
             } else {
-                print!("  ");
+                stdout.queue(Print("  ")).unwrap();
             }
         }
-        print!("{}", termion::cursor::Goto((display.len() * 2) as u16, (row + 11) as u16));
+        stdout.queue(MoveTo(width * 4, (row + 11) as u16)).unwrap();
     }
 
+    stdout.flush().unwrap();
 }
 
 pub fn init(width: usize, height: usize) -> Vec<Vec<char>> {
@@ -87,17 +116,33 @@ pub fn init(width: usize, height: usize) -> Vec<Vec<char>> {
     }
 
     // walls
-    print!("{}{}", termion::clear::All, termion::cursor::Goto(11, 1)); // clear screen and move cursor to top left while leaving space for hold
+    let mut stdout = stdout();
+    stdout.queue(Clear(ClearType::All)).unwrap();
+    stdout.queue(MoveTo(11, 1)).unwrap(); // move cursor to top left while leaving space for hold
     for row in display.iter().enumerate() {
-        print!("<!"); // left wall
+        stdout.queue(Print("<!")).unwrap(); // left wall
         for _ in row.1 {
-            print!("  ");
+            stdout.queue(Print("  ")).unwrap();
         }
-        print!("!>"); // right wall
-        print!("{}", termion::cursor::Goto(11, (row.0 + 2) as u16));
+        stdout.queue(Print("!>")).unwrap(); // right wall
+        stdout.queue(MoveTo(11, (row.0 + 2) as u16)).unwrap();
     }
-    print!("<!{}!>\r\n", "=".repeat(display[0].len() * 2)); // bottom wall
-    print!("{}{}", " ".repeat(12), "\\/".repeat(display[0].len())); // bottom spikes
+    stdout
+        .queue(Print(format!(
+            "<!{}!>\r\n",
+            "=".repeat(display[0].len() * 2)
+        )))
+        .unwrap(); // bottom wall
+    stdout
+        .queue(Print(format!(
+            "{}{}",
+            " ".repeat(13),
+            "\\/".repeat(display[0].len())
+        )))
+        .unwrap(); // bottom spikes
+    stdout.queue(Hide).unwrap(); // Hide the cursor
+    stdout.flush().unwrap();
+
     display
 }
 
@@ -356,28 +401,29 @@ fn gravity_until_new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetr
     *display = prev_display;
 }
 
-pub fn get_input<T: Read>(stdin: &mut Keys<T>) -> char {
-    let key = if let Some(Ok(key)) = stdin.last() {
-        match key {
-            Key::Char('q') => 'q', // quit
-            Key::Left => 'l',      // left
-            Key::Right => 'r',     // right
-            Key::Char(' ') => 's', // down with spacebar
-            Key::Down => 'd',      // down
-            Key::Up => 'u',        // rotate
-            Key::Char('c') => 'c', // hold
-            _ => ' ',
+pub fn get_input() -> char {
+    loop {
+        if poll(Duration::from_millis(0)).unwrap() {
+            let input = event::read().unwrap();
+            match input {
+                Event::Key(KeyEvent { code: KeyCode::Char('q'), kind: KeyEventKind::Press, .. }) => return 'q',
+                Event::Key(KeyEvent { code: KeyCode::Char(' '), kind: KeyEventKind::Press, .. }) => return 's',
+                Event::Key(KeyEvent { code: KeyCode::Char('c'), kind: KeyEventKind::Press, .. }) => return 'c',
+                Event::Key(KeyEvent { code: KeyCode::Left, kind: KeyEventKind::Press, .. }) => return 'l',
+                Event::Key(KeyEvent { code: KeyCode::Right, kind: KeyEventKind::Press, .. }) => return 'r',
+                Event::Key(KeyEvent { code: KeyCode::Up, kind: KeyEventKind::Press, .. }) => return 'u',
+                Event::Key(KeyEvent { code: KeyCode::Down, kind: KeyEventKind::Press, .. }) => return 'd',
+                _ => (),
+            }
+        } else {
+            return ' ';
         }
-    } else {
-        ' '
-    };
-
-    key
+    }
 }
 
 pub fn hold(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, hold_piece: &mut Option<Tetrominoe>, next_piece: &mut Tetrominoe) {
     // clear piece
-    for row in display.iter_mut() {
+    for row in display.iter_mut() { 
         for col in row.iter_mut() {
             if *col == 'a' {
                 *col = EMP;

@@ -10,17 +10,18 @@ use std::{
     time::Duration,
 };
 
-use termion::raw::IntoRawMode;
-use termion::input::TermRead;
+use crossterm::{execute, terminal::{enable_raw_mode, disable_raw_mode}, cursor::Show};
 
 use tetlib::*;
 use tetrominoe::Tetrominoe;
 use gamescore::GameScore;
 
 fn main() {
-    let mut stdin = termion::async_stdin().keys();
-    // let mut stdin = std::io::stdin().keys();
-    let mut stdout = stdout().into_raw_mode().unwrap();
+    let mut stdout = stdout();
+
+    // Enter alternate screen and hide cursor
+    // execute!(stdout, EnterAlternateScreen).unwrap();
+    enable_raw_mode().unwrap();
 
     const WIDTH: usize = 10;
     const HEIGHT: usize = 20;
@@ -30,7 +31,6 @@ fn main() {
     let mut gamescore = GameScore::new();
     let mut hold_piece: Option<Tetrominoe> = None;
     let mut next_piece = Tetrominoe::random();
-    print!("{}", termion::cursor::Hide);
     new_piece(&mut display, &mut active_piece, None, &mut next_piece);
 
     let mut counter: usize = 0;
@@ -40,7 +40,7 @@ fn main() {
         let prev_display = display.clone();
 
         // handle input
-        let key = get_input(&mut stdin);
+        let key = get_input();
 
         // quit
         if key == 'q' {
@@ -73,12 +73,15 @@ fn main() {
         let is_updated = display != prev_display;
 
         // render
-        render(&mut display, is_updated, &gamescore, &hold_piece, &next_piece);
+        render(&display, is_updated, &gamescore, &hold_piece, &next_piece);
         sleep(Duration::from_millis(50));
         stdout.flush().unwrap();
         counter += 1;
     }
-    
-    // Print prompt below game
-    print!("{}{}\r\n", termion::cursor::Show, termion::cursor::Goto(1, (HEIGHT+3) as u16));
+
+    // Leave alternate screen and show cursor
+    disable_raw_mode().unwrap();
+    // execute!(stdout, LeaveAlternateScreen).unwrap();
+    execute!(stdout, Show).unwrap();
+    print!("{}", "\n".repeat(HEIGHT/2+1))
 }
