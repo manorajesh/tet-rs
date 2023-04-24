@@ -9,7 +9,7 @@ pub struct GameScore {
 impl GameScore {
     pub fn new() -> GameScore {
         GameScore {
-            score: 0,
+            score: 9000,
             level: 0,
             time: SystemTime::now(),
         }

@@ -1,16 +1,20 @@
 use crossterm::{
-    cursor::{MoveTo, Hide},
+    cursor::{Hide, MoveTo},
+    event::{poll, KeyEventKind},
     style::{Color, Print, ResetColor, SetForegroundColor},
     terminal::{Clear, ClearType},
-    QueueableCommand, event::{KeyEventKind, poll},
+    QueueableCommand,
 };
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
 
-use std::{io::{stdout, Write}, time::Duration};
+use std::{
+    io::{stdout, Write},
+    time::Duration,
+};
 
-use crate::tetrominoe::Tetrominoe;
 use crate::gamescore::GameScore;
+use crate::tetrominoe::Tetrominoe;
 
 pub const EMP: char = '.';
 
@@ -28,27 +32,37 @@ pub fn render(
     let mut stdout = stdout();
     let width: u16 = display[0].len() as u16;
 
-    stdout.queue(MoveTo(width+3, 1)).unwrap(); // move cursor to top left
+    stdout.queue(MoveTo(width + 3, 1)).unwrap(); // move cursor to top left
     for (c, row) in display.iter().enumerate() {
         for ch in row {
             match ch {
-                &EMP => {stdout.queue(Print(" .")).unwrap();},
-                'a' => {stdout.queue(Print("[]")).unwrap();},
-                'l' => {stdout.queue(Print("[]")).unwrap();},
+                &EMP => {
+                    stdout.queue(Print(" .")).unwrap();
+                }
+                'a' => {
+                    stdout.queue(Print("[]")).unwrap();
+                }
+                'l' => {
+                    stdout.queue(Print("[]")).unwrap();
+                }
                 'g' => {
                     stdout
-                        .queue(SetForegroundColor(Color::Black))
+                        .queue(SetForegroundColor(Color::Rgb {
+                            r: 50,
+                            g: 50,
+                            b: 50,
+                        }))
                         .unwrap()
                         .queue(Print("//"))
                         .unwrap()
                         .queue(ResetColor)
                         .unwrap();
                 }
-                    
+
                 _ => panic!("unknown character: {}", ch),
             }
         }
-        stdout.queue(MoveTo(width+3, (c + 2) as u16)).unwrap();
+        stdout.queue(MoveTo(width + 3, (c + 2) as u16)).unwrap();
     }
 
     // hold piece
@@ -76,9 +90,13 @@ pub fn render(
 
     // print stats
     stdout.queue(MoveTo(width * 4, 1)).unwrap();
-    stdout.queue(Print(format!("Score: {}", score.score))).unwrap();
+    stdout
+        .queue(Print(format!("Score: {}", score.score)))
+        .unwrap();
     stdout.queue(MoveTo(width * 4, 3)).unwrap();
-    stdout.queue(Print(format!("Level: {}", score.level))).unwrap();
+    stdout
+        .queue(Print(format!("Level: {}", score.level)))
+        .unwrap();
     stdout.queue(MoveTo(width * 4, 5)).unwrap();
     let time = score.get_time();
     stdout
@@ -146,7 +164,11 @@ pub fn init(width: usize, height: usize) -> Vec<Vec<char>> {
     display
 }
 
-pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, next_piece: &mut Tetrominoe) -> bool {
+pub fn gravity(
+    display: &mut Vec<Vec<char>>,
+    active_piece: &mut Tetrominoe,
+    next_piece: &mut Tetrominoe,
+) -> bool {
     let prev_display = display.clone();
     for row in (0..display.len()).rev() {
         for col in 0..display[row].len() {
@@ -167,7 +189,12 @@ pub fn gravity(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, next
     false
 }
 
-pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut Tetrominoe, next_piece: &mut Tetrominoe) {
+pub fn handle_input(
+    display: &mut Vec<Vec<char>>,
+    key: char,
+    active_piece: &mut Tetrominoe,
+    next_piece: &mut Tetrominoe,
+) {
     let prev_display = display.clone();
     match key {
         'l' => {
@@ -225,7 +252,7 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
             if active_piece.row + 4 > display.len() {
                 active_piece.row = display.len() - 4;
             }
-            
+
             if active_piece.col + 4 > display[0].len() {
                 active_piece.col = display[0].len() - 4;
             }
@@ -248,7 +275,8 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
                     }
 
                     if active_piece.shape[row - active_piece.row][col - active_piece.col] == 'a' {
-                        display[row][col] = active_piece.shape[row - active_piece.row][col - active_piece.col];
+                        display[row][col] =
+                            active_piece.shape[row - active_piece.row][col - active_piece.col];
                     }
                 }
             }
@@ -258,7 +286,12 @@ pub fn handle_input(display: &mut Vec<Vec<char>>, key: char, active_piece: &mut 
     }
 }
 
-pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, desired_piece: Option<char>, next_piece: &mut Tetrominoe) -> bool {
+pub fn new_piece(
+    display: &mut Vec<Vec<char>>,
+    active_piece: &mut Tetrominoe,
+    desired_piece: Option<char>,
+    next_piece: &mut Tetrominoe,
+) -> bool {
     let half_width = display[0].len() / 2;
 
     // game over
@@ -332,7 +365,7 @@ pub fn new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, de
         _ => panic!("unknown picece: {}", piece),
     }
     active_piece.set(piece);
-    active_piece.set_pos(0, (half_width-1) as usize);
+    active_piece.set_pos(0, (half_width - 1) as usize);
     false
 }
 
@@ -355,17 +388,22 @@ pub fn full_line(display: &mut Vec<Vec<char>>, score: &mut GameScore) {
             }
         }
         display.remove(row);
-        display.insert(0, vec![EMP; display[0].len()]); // add new line at the top
         lines += 1;
     }
 
+    for _ in 0..lines {
+        display.insert(0, vec![EMP; display[0].len()]); // add new line at the top
+    }
+
     match lines {
-        1 => score.score += 40 * (score.level+1),
-        2 => score.score += 100 * (score.level+1),
-        3 => score.score += 300 * (score.level+1),
-        4 => score.score += 1200 * (score.level+1),
+        1 => score.score += 40 * (score.level + 1),
+        2 => score.score += 100 * (score.level + 1),
+        3 => score.score += 300 * (score.level + 1),
+        4 => score.score += 1200 * (score.level + 1),
         _ => (),
     }
+
+    score.level = score.score / 1000;
 }
 
 pub fn ghost_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) {
@@ -376,7 +414,7 @@ pub fn ghost_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) 
             }
         }
     }
-    
+
     let mut ghost = display.clone();
     let mut active_piece = active_piece.clone();
 
@@ -406,13 +444,46 @@ pub fn get_input() -> char {
         if poll(Duration::from_millis(0)).unwrap() {
             let input = event::read().unwrap();
             match input {
-                Event::Key(KeyEvent { code: KeyCode::Char('q'), kind: KeyEventKind::Press, .. }) => return 'q',
-                Event::Key(KeyEvent { code: KeyCode::Char(' '), kind: KeyEventKind::Press, .. }) => return 's',
-                Event::Key(KeyEvent { code: KeyCode::Char('c'), kind: KeyEventKind::Press, .. }) => return 'c',
-                Event::Key(KeyEvent { code: KeyCode::Left, kind: KeyEventKind::Press, .. }) => return 'l',
-                Event::Key(KeyEvent { code: KeyCode::Right, kind: KeyEventKind::Press, .. }) => return 'r',
-                Event::Key(KeyEvent { code: KeyCode::Up, kind: KeyEventKind::Press, .. }) => return 'u',
-                Event::Key(KeyEvent { code: KeyCode::Down, kind: KeyEventKind::Press, .. }) => return 'd',
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char('q'),
+                    kind: KeyEventKind::Press,
+                    ..
+                }) => return 'q', // quit
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char(' '),
+                    kind: KeyEventKind::Press,
+                    ..
+                }) => return 's', // hard drop
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char('c'),
+                    kind: KeyEventKind::Press,
+                    ..
+                }) => return 'c', // hold
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char('p'),
+                    kind: KeyEventKind::Press,
+                    ..
+                }) => return 'p', // pause
+                Event::Key(KeyEvent {
+                    code: KeyCode::Left,
+                    kind: KeyEventKind::Press,
+                    ..
+                }) => return 'l', // move left
+                Event::Key(KeyEvent {
+                    code: KeyCode::Right,
+                    kind: KeyEventKind::Press,
+                    ..
+                }) => return 'r', // move right
+                Event::Key(KeyEvent {
+                    code: KeyCode::Up,
+                    kind: KeyEventKind::Press,
+                    ..
+                }) => return 'u', // rotate clockwise
+                Event::Key(KeyEvent {
+                    code: KeyCode::Down,
+                    kind: KeyEventKind::Press,
+                    ..
+                }) => return 'd', // soft drop
                 _ => (),
             }
         } else {
@@ -421,9 +492,14 @@ pub fn get_input() -> char {
     }
 }
 
-pub fn hold(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, hold_piece: &mut Option<Tetrominoe>, next_piece: &mut Tetrominoe) {
+pub fn hold(
+    display: &mut Vec<Vec<char>>,
+    active_piece: &mut Tetrominoe,
+    hold_piece: &mut Option<Tetrominoe>,
+    next_piece: &mut Tetrominoe,
+) {
     // clear piece
-    for row in display.iter_mut() { 
+    for row in display.iter_mut() {
         for col in row.iter_mut() {
             if *col == 'a' {
                 *col = EMP;
@@ -444,6 +520,13 @@ pub fn hold(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe, hold_pi
 
 fn get_next_piece(next_piece: &mut Tetrominoe) -> char {
     let temp = next_piece.ptype;
-    *next_piece = Tetrominoe::random(); 
+    *next_piece = Tetrominoe::random();
     temp
+}
+
+pub fn put_text(width: u16, height: u16, text: &str) {
+    let mut stdout = stdout();
+    let width = width + text.len() as u16/2 + 3;
+    stdout.queue(MoveTo(width, height/2)).unwrap();
+    print!("{}", text);
 }

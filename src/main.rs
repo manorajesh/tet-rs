@@ -1,8 +1,8 @@
 // Tetris
 
-mod tetrominoe;
-mod tetlib;
 mod gamescore;
+mod tetlib;
+mod tetrominoe;
 
 use std::{
     io::{stdout, Write},
@@ -10,11 +10,15 @@ use std::{
     time::Duration,
 };
 
-use crossterm::{execute, terminal::{enable_raw_mode, disable_raw_mode}, cursor::Show};
+use crossterm::{
+    cursor::Show,
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode},
+};
 
+use gamescore::GameScore;
 use tetlib::*;
 use tetrominoe::Tetrominoe;
-use gamescore::GameScore;
 
 fn main() {
     let mut stdout = stdout();
@@ -47,6 +51,15 @@ fn main() {
             break;
         }
 
+        if key == 'p' {
+            let mut key = get_input();
+            put_text(WIDTH as u16, HEIGHT as u16, "P A U S E D");
+            stdout.flush().unwrap();
+            while key != 'p' {
+                key = get_input();
+            }
+        }
+
         // gravity
         if counter == 10 - gamescore.level {
             if gravity(&mut display, &mut active_piece, &mut next_piece) {
@@ -60,7 +73,12 @@ fn main() {
 
         // hold piece
         if key == 'c' {
-            hold(&mut display, &mut active_piece, &mut hold_piece, &mut next_piece);
+            hold(
+                &mut display,
+                &mut active_piece,
+                &mut hold_piece,
+                &mut next_piece,
+            );
         }
 
         // full line
@@ -79,9 +97,9 @@ fn main() {
         counter += 1;
     }
 
-    // Leave alternate screen and show cursor
+    put_text(WIDTH as u16, HEIGHT as u16, "G A M E  O V E R");
     disable_raw_mode().unwrap();
     // execute!(stdout, LeaveAlternateScreen).unwrap();
     execute!(stdout, Show).unwrap();
-    print!("{}", "\n".repeat(HEIGHT/2+1))
+    print!("{}", "\n".repeat(HEIGHT / 2 + 1))
 }
