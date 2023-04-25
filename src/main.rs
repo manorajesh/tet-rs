@@ -21,14 +21,15 @@ use tetlib::*;
 use tetrominoe::Tetrominoe;
 
 fn main() {
-    let mut stdout = stdout();
-
-    // Enter alternate screen and hide cursor
-    // execute!(stdout, EnterAlternateScreen).unwrap();
-    enable_raw_mode().unwrap();
-
     const WIDTH: usize = 10;
     const HEIGHT: usize = 20;
+    const MAX_LEVEL: usize = 20;
+    const GRAV_TICK: usize = 25;
+    const LEVEL_MULT: f64 = 0.85;
+
+    let mut stdout = stdout();
+
+    enable_raw_mode().unwrap();
 
     let mut display: Vec<Vec<char>> = init(WIDTH, HEIGHT);
     let mut active_piece = Tetrominoe::new();
@@ -55,17 +56,18 @@ fn main() {
             let mut key = get_input();
             put_text(WIDTH as u16, HEIGHT as u16, "P A U S E D");
             stdout.flush().unwrap();
-            while key != 'p' {
+            while key != 'p' && key != 'q' {
                 key = get_input();
+                sleep(Duration::from_millis(10));
             }
         }
 
         // gravity
-        if counter == 10 - gamescore.level {
+        if counter >= (GRAV_TICK as f64*LEVEL_MULT.powf(gamescore.level as f64)) as usize {
             if gravity(&mut display, &mut active_piece, &mut next_piece) {
                 break;
             }
-            counter = 0;
+            counter = if gamescore.level < MAX_LEVEL { 0 } else { 100 };
         }
 
         // handle input
@@ -92,7 +94,7 @@ fn main() {
 
         // render
         render(&display, is_updated, &gamescore, &hold_piece, &next_piece);
-        sleep(Duration::from_millis(50));
+        sleep(Duration::from_millis(10));
         stdout.flush().unwrap();
         counter += 1;
     }
@@ -101,5 +103,5 @@ fn main() {
     disable_raw_mode().unwrap();
     // execute!(stdout, LeaveAlternateScreen).unwrap();
     execute!(stdout, Show).unwrap();
-    print!("{}", "\n".repeat(HEIGHT / 2 + 1))
+    print!("{}", "\n".repeat(HEIGHT / 2 + 4))
 }
