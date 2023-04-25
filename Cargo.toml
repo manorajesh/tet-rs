@@ -1,13 +1,20 @@
 [package]
-name = "tetris"
-version = "0.1.0"
+name = "tet-rs"
+version = "0.2.1"
 edition = "2021"
+description = "A play a quick game of 1984-ish Tetris right in the terminal!"
+readme = "README.md"
+repository = "https://github.com/manorajesh/tet-rs"
+license-file = "LICENSE"
+keywords = ["tetris", "game", "terminal"]
+categories = ["games"]
+exclude = [".vscode"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-crossterm = "0.26.1"
-rand = "0.8.5"
+crossterm = "^0.26.1"
+rand = "^0.8.5"
 
 [profile.release]
 lto = "fat"
