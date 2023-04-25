@@ -1,19 +1,19 @@
-# tet-rs
+# tet-ris
 Civil-War-Reenactment Style of Tetris 1984 (with some quality-of-life improvements) in Rust!
 
 ## Installation
 ```shell
-cargo install tet-rs
+cargo install tet-ris
 ```
 or
 ```shell
-$ git clone https://github.com/manorajesh/tet-rs.git
+$ git clone https://github.com/manorajesh/tet-ris.git
 $ cargo build --release
 ```
 
 ## Usage
 ```shell
-tet-rs
+tet-ris
 ```
 
 ### How to Play

@@ -1,5 +1,5 @@
 [package]
-name = "tet-rs"
+name = "tet-ris"
 version = "0.2.1"
 edition = "2021"
 description = "A play a quick game of 1984-ish Tetris right in the terminal!"
@@ -8,7 +8,7 @@ repository = "https://github.com/manorajesh/tet-rs"
 license-file = "LICENSE"
 keywords = ["tetris", "game", "terminal"]
 categories = ["games"]
-exclude = [".vscode"]
+exclude = [".vscode", "images", ".github"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
