@@ -9,7 +9,7 @@ name: Windows x86_64 build
 jobs:
   windows-x86_64-msvc:
     name: Windows x86_64
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
