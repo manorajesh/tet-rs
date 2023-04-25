@@ -1,10 +1,10 @@
 [package]
 name = "tet-ris"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "A play a quick game of 1984-ish Tetris right in the terminal!"
 readme = "README.md"
-repository = "https://github.com/manorajesh/tet-rs"
+repository = "https://github.com/manorajesh/tet-ris"
 license-file = "LICENSE"
 keywords = ["tetris", "game", "terminal"]
 categories = ["games"]
