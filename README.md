@@ -2,6 +2,8 @@
 ![Build Status](https://github.com/manorajesh/tet-ris/actions/workflows/MacOS.yml/badge.svg)
 ![Build Status](https://github.com/manorajesh/tet-ris/actions/workflows/Linux.yml/badge.svg)
 ![Build Status](https://github.com/manorajesh/tet-ris/actions/workflows/Windows.yml/badge.svg)
+![Downloads](https://img.shields.io/crates/d/tet-ris)
+![Version](https://img.shields.io/crates/v/tet-ris)
 
 Civil-War-Reenactment Style of Tetris 1984 (with some quality-of-life improvements) in Rust!
 

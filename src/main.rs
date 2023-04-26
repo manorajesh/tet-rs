@@ -3,6 +3,7 @@
 mod gamescore;
 mod tetlib;
 mod tetrominoe;
+mod args;
 
 use std::{
     io::{stdout, Write},
@@ -16,11 +17,15 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode},
 };
 
+use clap::Parser;
+
 use gamescore::GameScore;
 use tetlib::*;
 use tetrominoe::Tetrominoe;
 
 fn main() {
+    let args = args::Args::parse();
+
     const WIDTH: usize = 10;
     const HEIGHT: usize = 20;
     const MAX_LEVEL: usize = 20;
@@ -28,7 +33,6 @@ fn main() {
     const LEVEL_MULT: f64 = 0.85;
 
     let mut stdout = stdout();
-
     enable_raw_mode().unwrap();
 
     let mut display: Vec<Vec<char>> = init(WIDTH, HEIGHT);
@@ -74,7 +78,7 @@ fn main() {
         handle_input(&mut display, key, &mut active_piece, &mut next_piece);
 
         // hold piece
-        if key == 'c' {
+        if key == 'c' && !args.hold {
             hold(
                 &mut display,
                 &mut active_piece,
@@ -87,14 +91,16 @@ fn main() {
         full_line(&mut display, &mut gamescore);
 
         // ghost piece
-        ghost_piece(&mut display, &mut active_piece);
+        if !args.ghost{
+            ghost_piece(&mut display, &mut active_piece);
+        }
 
         // check if display was changed
         let is_updated = display != prev_display;
 
         // render
         render(&display, is_updated, &gamescore, &hold_piece, &next_piece);
-        sleep(Duration::from_millis(10));
+        sleep(Duration::from_millis(args.gravity));
         stdout.flush().unwrap();
         counter += 1;
     }

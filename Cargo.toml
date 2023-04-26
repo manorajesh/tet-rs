@@ -1,6 +1,6 @@
 [package]
 name = "tet-ris"
-version = "0.2.3"
+version = "0.3.0"
 edition = "2021"
 description = "A play a quick game of 1984-ish Tetris right in the terminal!"
 readme = "README.md"
@@ -13,7 +13,8 @@ exclude = [".vscode", "images", ".github"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-crossterm = "^0.26.1"
+clap = { version = "^4.2.4", features = ["derive"] }
+crossterm = {version = "^0.26.1", default-features = false }
 rand = "^0.8.5"
 
 [profile.release]
