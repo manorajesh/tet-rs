@@ -6,7 +6,6 @@ description = "A play a quick game of 1984-ish Tetris right in the terminal!"
 readme = "README.md"
 repository = "https://github.com/manorajesh/tet-ris"
 license = "MIT"
-license-file = "LICENSE"
 keywords = ["tetris", "game", "terminal"]
 categories = ["games"]
 exclude = [".vscode", "images", ".github"]
