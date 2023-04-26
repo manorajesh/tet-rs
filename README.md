@@ -5,6 +5,8 @@
 
 Civil-War-Reenactment Style of Tetris 1984 (with some quality-of-life improvements) in Rust!
 
+[![demo](https://asciinema.org/a/0PSmnvMDN4jZkJEKsC8J1bZTG.svg)](https://asciinema.org/a/0PSmnvMDN4jZkJEKsC8J1bZTG?t=5?autoplay=1)
+
 ## Installation
 ```shell
 cargo install tet-ris
