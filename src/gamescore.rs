@@ -1,5 +1,7 @@
 use std::time::SystemTime;
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct GameScore {
     pub score: usize,
     pub level: usize,

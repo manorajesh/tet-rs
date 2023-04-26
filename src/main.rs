@@ -4,6 +4,7 @@ mod gamescore;
 mod tetlib;
 mod tetrominoe;
 mod args;
+mod gamestate;
 
 use std::{
     io::{stdout, Write},
@@ -19,9 +20,8 @@ use crossterm::{
 
 use clap::Parser;
 
-use gamescore::GameScore;
 use tetlib::*;
-use tetrominoe::Tetrominoe;
+use gamestate::GameState;
 
 fn main() {
     let args = args::Args::parse();
@@ -35,18 +35,18 @@ fn main() {
     let mut stdout = stdout();
     enable_raw_mode().unwrap();
 
-    let mut display: Vec<Vec<char>> = init(WIDTH, HEIGHT);
-    let mut active_piece = Tetrominoe::new();
-    let mut gamescore = GameScore::new();
-    let mut hold_piece: Option<Tetrominoe> = None;
-    let mut next_piece = Tetrominoe::random();
-    new_piece(&mut display, &mut active_piece, None, &mut next_piece);
-
-    let mut counter: usize = 0;
+    let mut gs = if let Some(path) = args.save {
+        init(WIDTH, HEIGHT);
+        GameState::deserial(Some(path), WIDTH, HEIGHT)
+    } else {
+        let mut gs = GameState::new(WIDTH, HEIGHT);
+        new_piece(&mut gs.display, &mut gs.active_piece, None, &mut gs.next_piece);
+        gs
+    };
 
     // main loop
     loop {
-        let prev_display = display.clone();
+        let prev_display = gs.display.clone();
 
         // handle input
         let key = get_input();
@@ -67,47 +67,52 @@ fn main() {
         }
 
         // gravity
-        if counter >= (GRAV_TICK as f64*LEVEL_MULT.powf(gamescore.level as f64)) as usize {
-            if gravity(&mut display, &mut active_piece, &mut next_piece) {
+        if gs.counter >= (GRAV_TICK as f64*LEVEL_MULT.powf(gs.gamescore.level as f64)) as usize {
+            if gravity(&mut gs.display, &mut gs.active_piece, &mut gs.next_piece) {
                 break;
             }
-            counter = if gamescore.level < MAX_LEVEL { 0 } else { 100 };
+            gs.counter = if gs.gamescore.level < MAX_LEVEL { 0 } else { 100 };
         }
 
         // handle input
-        handle_input(&mut display, key, &mut active_piece, &mut next_piece);
+        handle_input(&mut gs.display, key, &mut gs.active_piece, &mut gs.next_piece);
 
         // hold piece
         if key == 'c' && !args.hold {
             hold(
-                &mut display,
-                &mut active_piece,
-                &mut hold_piece,
-                &mut next_piece,
+                &mut gs.display,
+                &mut gs.active_piece,
+                &mut gs.hold_piece,
+                &mut gs.next_piece,
             );
         }
 
         // full line
-        full_line(&mut display, &mut gamescore);
+        full_line(&mut gs.display, &mut gs.gamescore);
 
         // ghost piece
         if !args.ghost{
-            ghost_piece(&mut display, &mut active_piece);
+            ghost_piece(&mut gs.display, &mut gs.active_piece);
         }
 
-        // check if display was changed
-        let is_updated = display != prev_display;
+        // check if gs.display was changed
+        let is_updated = gs.display != prev_display;
 
         // render
-        render(&display, is_updated, &gamescore, &hold_piece, &next_piece);
+        render(&gs.display, is_updated, &gs.gamescore, &gs.hold_piece, &gs.next_piece);
         sleep(Duration::from_millis(args.gravity));
         stdout.flush().unwrap();
-        counter += 1;
+        gs.counter += 1;
     }
 
+    gs.serial(None);
     put_text(WIDTH as u16, HEIGHT as u16, "G A M E  O V E R");
     disable_raw_mode().unwrap();
-    // execute!(stdout, LeaveAlternateScreen).unwrap();
     execute!(stdout, Show).unwrap();
     print!("{}", "\n".repeat(HEIGHT / 2 + 4))
+}
+
+#[test]
+fn test_main(){
+    main();
 }

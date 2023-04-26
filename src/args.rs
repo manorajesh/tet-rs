@@ -14,4 +14,8 @@ pub struct Args {
     /// Gravity speed for the game
     #[clap(short = 't', long = "tick", default_value = "10", value_name = "MILLISECONDS")]
     pub gravity: u64,
+
+    /// path to save file
+    #[clap(short, long, value_name = "FILE")]
+    pub save: Option<String>,
 }

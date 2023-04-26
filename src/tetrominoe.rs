@@ -1,8 +1,9 @@
 use rand::{thread_rng, Rng};
+use serde::{Serialize, Deserialize};
 
 use crate::tetlib::EMP;
 
-#[derive(Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Tetrominoe {
     pub shape: Vec<Vec<char>>,
     pub row: usize,
