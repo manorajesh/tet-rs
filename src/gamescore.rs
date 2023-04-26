@@ -1,11 +1,13 @@
-use std::time::SystemTime;
+use std::time::{Duration, Instant};
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct GameScore {
     pub score: usize,
     pub level: usize,
-    pub time: SystemTime,
+    pub elapsed_time: Duration,
+    #[serde(skip)]
+    last_update: Option<Instant>,
 }
 
 impl GameScore {
@@ -13,13 +15,28 @@ impl GameScore {
         GameScore {
             score: 0,
             level: 0,
-            time: SystemTime::now(),
+            elapsed_time: Duration::new(0, 0),
+            last_update: Some(Instant::now()),
         }
     }
 
+    pub fn update(&mut self) {
+        if let Some(last_update) = self.last_update {
+            let now = Instant::now();
+            let duration_since_last_update = now.duration_since(last_update);
+
+            if duration_since_last_update >= Duration::from_secs(1) {
+                self.elapsed_time += Duration::from_secs(1);
+                self.last_update = Some(now);
+            }
+        }
+    }
+
+    pub fn reset_timer(&mut self) {
+        self.last_update = Some(Instant::now());
+    }
+
     pub fn get_time(&self) -> usize {
-        let now = SystemTime::now();
-        let duration = now.duration_since(self.time).unwrap();
-        duration.as_secs() as usize
+        self.elapsed_time.as_secs() as usize
     }
 }

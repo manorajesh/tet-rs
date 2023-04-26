@@ -21,7 +21,7 @@ pub const EMP: char = '.';
 pub fn render(
     display: &Vec<Vec<char>>,
     is_updated: bool,
-    score: &GameScore,
+    score: &mut GameScore,
     hold_piece: &Option<Tetrominoe>,
     next_piece: &Tetrominoe,
 ) {
@@ -98,6 +98,7 @@ pub fn render(
         .queue(Print(format!("Level: {}", score.level)))
         .unwrap();
     stdout.queue(MoveTo(width * 4, 5)).unwrap();
+    score.update();
     let time = score.get_time();
     stdout
         .queue(Print(format!("Time: {}:{:02}", time / 60, time % 60)))

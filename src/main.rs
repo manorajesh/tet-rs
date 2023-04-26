@@ -35,13 +35,14 @@ fn main() {
     let mut stdout = stdout();
     enable_raw_mode().unwrap();
 
-    let mut gs = if let Some(path) = args.save {
-        init(WIDTH, HEIGHT);
-        GameState::deserial(Some(path), WIDTH, HEIGHT)
+    let mut gs = if let Some(path) = &args.save {
+        if path_exists(path) {
+            GameState::deserial(path.clone(), WIDTH, HEIGHT)
+        } else {
+            GameState::new(WIDTH, HEIGHT)
+        }
     } else {
-        let mut gs = GameState::new(WIDTH, HEIGHT);
-        new_piece(&mut gs.display, &mut gs.active_piece, None, &mut gs.next_piece);
-        gs
+        GameState::new(WIDTH, HEIGHT)
     };
 
     // main loop
@@ -69,6 +70,7 @@ fn main() {
         // gravity
         if gs.counter >= (GRAV_TICK as f64*LEVEL_MULT.powf(gs.gamescore.level as f64)) as usize {
             if gravity(&mut gs.display, &mut gs.active_piece, &mut gs.next_piece) {
+                gs.is_game_over = true;
                 break;
             }
             gs.counter = if gs.gamescore.level < MAX_LEVEL { 0 } else { 100 };
@@ -96,23 +98,27 @@ fn main() {
         }
 
         // check if gs.display was changed
-        let is_updated = gs.display != prev_display;
+        let is_updated = gs.display != prev_display || gs.is_game_over;
 
         // render
-        render(&gs.display, is_updated, &gs.gamescore, &gs.hold_piece, &gs.next_piece);
+        render(&gs.display, is_updated, &mut gs.gamescore, &gs.hold_piece, &gs.next_piece);
         sleep(Duration::from_millis(args.gravity));
         stdout.flush().unwrap();
         gs.counter += 1;
     }
 
-    gs.serial(None);
     put_text(WIDTH as u16, HEIGHT as u16, "G A M E  O V E R");
     disable_raw_mode().unwrap();
     execute!(stdout, Show).unwrap();
-    print!("{}", "\n".repeat(HEIGHT / 2 + 4))
+    print!("{}", "\n".repeat(HEIGHT / 2 + 4));
+    gs.serial(args.save.unwrap_or("save.tetris".to_string()));   
 }
 
 #[test]
 fn test_main(){
     main();
+}
+
+fn path_exists(path: &String) -> bool {
+    std::path::Path::new(path).exists()
 }
