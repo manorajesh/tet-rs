@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::tetlib::EMP;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Hash)]
 pub struct Tetrominoe {
     pub shape: Vec<Vec<char>>,
     pub row: usize,

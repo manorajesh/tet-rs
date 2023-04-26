@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct GameScore {
     pub score: usize,
     pub level: usize,
@@ -38,5 +38,9 @@ impl GameScore {
 
     pub fn get_time(&self) -> usize {
         self.elapsed_time.as_secs() as usize
+    }
+
+    pub fn stop_timer(&mut self) {
+        self.last_update = None;
     }
 }

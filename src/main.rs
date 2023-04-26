@@ -45,6 +45,10 @@ fn main() {
         GameState::new(WIDTH, HEIGHT)
     };
 
+    if gs.is_game_over {
+        gs.gamescore.stop_timer();
+    }
+
     // main loop
     loop {
         let prev_display = gs.display.clone();
@@ -111,12 +115,7 @@ fn main() {
     disable_raw_mode().unwrap();
     execute!(stdout, Show).unwrap();
     print!("{}", "\n".repeat(HEIGHT / 2 + 4));
-    gs.serial(args.save.unwrap_or("save.tetris".to_string()));   
-}
-
-#[test]
-fn test_main(){
-    main();
+    gs.serial();   
 }
 
 fn path_exists(path: &String) -> bool {
