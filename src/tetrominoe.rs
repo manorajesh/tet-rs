@@ -1,5 +1,5 @@
 use oorandom::Rand32;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
 use crate::tetlib::EMP;

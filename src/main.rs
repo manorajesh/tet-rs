@@ -1,10 +1,10 @@
 // Tetris
 
+mod args;
 mod gamescore;
+mod gamestate;
 mod tetlib;
 mod tetrominoe;
-mod args;
-mod gamestate;
 
 use std::{
     io::{stdout, Write},
@@ -20,8 +20,8 @@ use crossterm::{
 
 use clap::Parser;
 
-use tetlib::*;
 use gamestate::GameState;
+use tetlib::*;
 
 fn main() {
     let args = args::Args::parse();
@@ -72,16 +72,25 @@ fn main() {
         }
 
         // gravity
-        if gs.counter >= (GRAV_TICK as f64*LEVEL_MULT.powf(gs.gamescore.level as f64)) as usize {
+        if gs.counter >= (GRAV_TICK as f64 * LEVEL_MULT.powf(gs.gamescore.level as f64)) as usize {
             if gravity(&mut gs.display, &mut gs.active_piece, &mut gs.next_piece) {
                 gs.is_game_over = true;
                 break;
             }
-            gs.counter = if gs.gamescore.level < MAX_LEVEL { 0 } else { 100 };
+            gs.counter = if gs.gamescore.level < MAX_LEVEL {
+                0
+            } else {
+                100
+            };
         }
 
         // handle input
-        handle_input(&mut gs.display, key, &mut gs.active_piece, &mut gs.next_piece);
+        handle_input(
+            &mut gs.display,
+            key,
+            &mut gs.active_piece,
+            &mut gs.next_piece,
+        );
 
         // hold piece
         if key == 'c' && !args.hold {
@@ -97,7 +106,7 @@ fn main() {
         full_line(&mut gs.display, &mut gs.gamescore);
 
         // ghost piece
-        if !args.ghost{
+        if !args.ghost {
             ghost_piece(&mut gs.display, &mut gs.active_piece);
         }
 
@@ -105,7 +114,13 @@ fn main() {
         let is_updated = gs.display != prev_display || gs.is_game_over;
 
         // render
-        render(&gs.display, is_updated, &mut gs.gamescore, &gs.hold_piece, &gs.next_piece);
+        render(
+            &gs.display,
+            is_updated,
+            &mut gs.gamescore,
+            &gs.hold_piece,
+            &gs.next_piece,
+        );
         sleep(Duration::from_millis(args.gravity));
         stdout.flush().unwrap();
         gs.counter += 1;
@@ -115,7 +130,7 @@ fn main() {
     disable_raw_mode().unwrap();
     execute!(stdout, Show).unwrap();
     print!("{}", "\n".repeat(HEIGHT / 2 + 4));
-    gs.serial();   
+    gs.serial();
 }
 
 fn path_exists(path: &String) -> bool {

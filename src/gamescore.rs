@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
-use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct GameScore {

@@ -1,15 +1,15 @@
 use crate::tetlib::new_piece;
-use crate::{tetrominoe::Tetrominoe, gamescore::GameScore, tetlib::init};
+use crate::{gamescore::GameScore, tetlib::init, tetrominoe::Tetrominoe};
+use bincode::{deserialize, serialize};
+use serde::{Deserialize, Serialize};
+use std::collections::hash_map::DefaultHasher;
 use std::fs::OpenOptions;
 use std::hash::Hash;
-use std::io::{Write, Read};
+use std::hash::Hasher;
+use std::io::{Read, Write};
+use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
-use serde::{Serialize, Deserialize};
-use bincode::{serialize, deserialize};
-use std::path::Path;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::Hasher;
 
 #[derive(Serialize, Deserialize)]
 struct GameWrapper {
@@ -49,7 +49,12 @@ impl GameState {
             is_game_over: false,
         };
         init(width, height);
-        new_piece(&mut gs.display, &mut gs.active_piece, None, &mut gs.next_piece);
+        new_piece(
+            &mut gs.display,
+            &mut gs.active_piece,
+            None,
+            &mut gs.next_piece,
+        );
         gs
     }
 
@@ -57,30 +62,30 @@ impl GameState {
         if !confirmation("Save game?") {
             return;
         }
-    
+
         let path = if confirmation("Use default save file?") {
             String::from("save.tetris")
         } else {
             handle_input!("Enter path to save file: ")
         };
-    
+
         if Path::new(&path).exists() {
             if !confirmation("Overwrite save file?") {
                 return;
             }
         }
-    
+
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
             .open(&path)
             .unwrap();
-    
+
         self.gamescore.stop_timer();
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
         let hash = hasher.finish();
-    
+
         let game_wrapper = GameWrapper {
             game: self.clone(),
             hash,
@@ -90,26 +95,23 @@ impl GameState {
             println!("Hash verification failed. Aborting save.");
             return;
         }
-    
+
         let serialized_data = serialize(&game_wrapper).expect("Failed to serialize game.");
         file.write_all(&serialized_data).unwrap();
     }
-    
 
     pub fn deserial(path: String, width: usize, height: usize) -> Self {
         if !Path::new(&path).exists() {
             return GameState::new(width, height);
         }
-    
-        let mut file = OpenOptions::new()
-            .read(true)
-            .open(path)
-            .unwrap();
-    
+
+        let mut file = OpenOptions::new().read(true).open(path).unwrap();
+
         let mut serialized_data = Vec::new();
         file.read_to_end(&mut serialized_data).unwrap();
-    
-        let game_wrapper: GameWrapper = deserialize(&serialized_data).expect("Failed to deserialize game.");
+
+        let game_wrapper: GameWrapper =
+            deserialize(&serialized_data).expect("Failed to deserialize game.");
 
         if !game_wrapper.verify() {
             println!("Save file is corrupted. Starting new game.");
@@ -141,16 +143,13 @@ fn confirmation(prompt: &str) -> bool {
 
 #[macro_export]
 macro_rules! handle_input {
-    ($x:expr) => {
-        {
-            print!("{}", $x);
-            std::io::stdout().flush().unwrap();
-            let stdin = std::io::stdin();
-            let mut buf = String::new();
-            stdin.read_line(&mut buf).unwrap();
-            buf.trim().to_string()
-        }
-    }
+    ($x:expr) => {{
+        print!("{}", $x);
+        std::io::stdout().flush().unwrap();
+        let stdin = std::io::stdin();
+        let mut buf = String::new();
+        stdin.read_line(&mut buf).unwrap();
+        buf.trim().to_string()
+    }};
 }
 pub(crate) use handle_input;
-

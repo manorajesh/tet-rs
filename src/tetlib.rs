@@ -527,8 +527,8 @@ fn get_next_piece(next_piece: &mut Tetrominoe) -> char {
 
 pub fn put_text(width: u16, height: u16, text: &str) {
     let mut stdout = stdout();
-    let width = width*2-(text.len() as u16/4);
-    stdout.queue(MoveTo(width, height/2)).unwrap();
+    let width = width * 2 - (text.len() as u16 / 4);
+    stdout.queue(MoveTo(width, height / 2)).unwrap();
     stdout
         .queue(SetForegroundColor(Color::Rgb {
             r: 255,
