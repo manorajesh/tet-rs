@@ -1,5 +1,6 @@
-use rand::{thread_rng, Rng};
+use oorandom::Rand32;
 use serde::{Serialize, Deserialize};
+use std::time::SystemTime;
 
 use crate::tetlib::EMP;
 
@@ -171,6 +172,10 @@ impl Tetrominoe {
     }
 }
 
-fn getrandom(end: usize) -> usize {
-    thread_rng().gen_range(0..end)
+fn getrandom(end: u32) -> u32 {
+    let time_from_epoch = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    Rand32::new(time_from_epoch).rand_range(0..end)
 }
