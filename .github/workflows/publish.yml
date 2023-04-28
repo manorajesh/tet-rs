@@ -1,0 +1,23 @@
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+name: publish
+
+jobs:
+  crates_io_publish:
+    name: crates.io publish
+    needs: [linux-x86_64, linux_aarch64, apple-darwin-x86_64, apple-darwin-aarch64, windows-x86_64-msvc, windows-aarach64]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+          toolchain: stable
+          override: true
+    - uses: katyo/publish-crates@v2
+      with:
+          registry-token: ${{ secrets.CARGO_PUB_TOKEN }}
+          ignore-unpublished-changes: true

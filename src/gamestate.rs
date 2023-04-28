@@ -69,10 +69,8 @@ impl GameState {
             handle_input!("Enter path to save file: ")
         };
 
-        if Path::new(&path).exists() {
-            if !confirmation("Overwrite save file?") {
-                return;
-            }
+        if Path::new(&path).exists() && !confirmation("Overwrite save file?") {
+            return;
         }
 
         let mut file = OpenOptions::new()

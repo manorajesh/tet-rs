@@ -19,7 +19,7 @@ use crate::tetrominoe::Tetrominoe;
 pub const EMP: char = '.';
 
 pub fn render(
-    display: &Vec<Vec<char>>,
+    display: &[Vec<char>],
     is_updated: bool,
     score: &mut GameScore,
     hold_piece: &Option<Tetrominoe>,
@@ -127,11 +127,7 @@ pub fn init(width: usize, height: usize) -> Vec<Vec<char>> {
 
     // generation
     for _ in 0..height {
-        let mut row: Vec<char> = Vec::new();
-        for _ in 0..width {
-            row.push(EMP);
-        }
-        display.push(row);
+        display.push(vec![EMP; width]);
     }
 
     // walls
@@ -300,7 +296,7 @@ pub fn new_piece(
         return true;
     }
 
-    let piece = desired_piece.unwrap_or(get_next_piece(next_piece));
+    let piece = desired_piece.unwrap_or_else(|| get_next_piece(next_piece));
     match piece {
         'I' => {
             // I
@@ -366,7 +362,7 @@ pub fn new_piece(
         _ => panic!("unknown picece: {}", piece),
     }
     active_piece.set(piece);
-    active_piece.set_pos(0, (half_width - 1) as usize);
+    active_piece.set_pos(0, half_width - 1);
     false
 }
 
@@ -536,7 +532,7 @@ pub fn put_text(width: u16, height: u16, text: &str) {
             b: 97,
         }))
         .unwrap()
-        .queue(Print(format!("{}", text)))
+        .queue(Print(text.to_string()))
         .unwrap()
         .queue(ResetColor)
         .unwrap();

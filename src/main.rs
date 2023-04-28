@@ -29,7 +29,7 @@ fn main() {
     const WIDTH: usize = 10;
     const HEIGHT: usize = 20;
     const MAX_LEVEL: usize = 20;
-    const GRAV_TICK: usize = 25;
+    const GRAV_TICK: usize = 40;
     const LEVEL_MULT: f64 = 0.85;
 
     let mut stdout = stdout();
