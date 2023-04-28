@@ -1,7 +1,9 @@
 on:
   workflow_run:
-    workflows: ["Linux build, MacOS build, Windows build"]
-    branches: [main]
+    workflows:
+      - Linux build
+      - MacOS build
+      - Windows build
     types: 
       - completed
 
