@@ -1,85 +1,133 @@
+use std::time::SystemTime;
 use oorandom::Rand32;
 use serde::{Deserialize, Serialize};
-use std::time::SystemTime;
+use crossterm::style::Color;
 
 use crate::tetlib::EMP;
 
-#[derive(Serialize, Deserialize, Clone, Hash)]
+#[derive(Clone, PartialEq, Debug, Copy, Default, Deserialize, Serialize, Hash)]
+pub enum TColor {
+    Cyan,
+    Red,
+    Green,
+    Yellow,
+    Blue,
+    Magenta,
+    Orange,
+    #[default]
+    Empty,
+}
+
+#[derive(Clone, PartialEq, Debug, Copy, Default, Deserialize, Serialize, Hash)]
+pub enum State {
+    Landed,
+    Active,
+    Ghost,
+    #[default]
+    Empty,
+}
+
+#[derive(Clone, PartialEq, Debug, Copy, Default, Deserialize, Serialize, Hash)]
 pub struct Tetrominoe {
-    pub shape: Vec<Vec<char>>,
+    pub shape: [[char; 4]; 4],
     pub row: usize,
     pub col: usize,
     pub ptype: char,
-    state: usize,
+    pub color: TColor,
+    pub game_state: State,
+    rotation_state: usize,
 }
 
 impl Tetrominoe {
-    pub fn new() -> Tetrominoe {
+    pub fn new(state: Option<State>, color: Option<TColor>) -> Tetrominoe {
         Tetrominoe {
-            shape: Vec::new(),
+            shape: [[EMP; 4]; 4],
             row: 0,
             col: 0,
             ptype: ' ',
-            state: 0,
+            color: color.unwrap_or(TColor::Empty),
+            game_state: state.unwrap_or(State::Empty),
+            rotation_state: 0,
         }
     }
 
     pub fn set(&mut self, shape: char) -> &mut Self {
         self.ptype = shape;
         let shape = match shape {
-            'I' => vec![
-                vec![EMP, 'a', EMP, EMP],
-                vec![EMP, 'a', EMP, EMP],
-                vec![EMP, 'a', EMP, EMP],
-                vec![EMP, 'a', EMP, EMP],
-            ],
+            'I' => {
+                self.color = TColor::Cyan;
+                [
+                    [EMP, 'a', EMP, EMP],
+                    [EMP, 'a', EMP, EMP],
+                    [EMP, 'a', EMP, EMP],
+                    [EMP, 'a', EMP, EMP],
+                ]
+            }
 
-            'J' => vec![
-                vec![EMP, 'a', EMP, EMP],
-                vec![EMP, 'a', EMP, EMP],
-                vec!['a', 'a', EMP, EMP],
-                vec![EMP, EMP, EMP, EMP],
-            ],
+            'J' => {
+                self.color = TColor::Blue;
+                [
+                    [EMP, 'a', EMP, EMP],
+                    [EMP, 'a', EMP, EMP],
+                    ['a', 'a', EMP, EMP],
+                    [EMP, EMP, EMP, EMP],
+                ]
+            }
 
-            'L' => vec![
-                vec![EMP, 'a', EMP, EMP],
-                vec![EMP, 'a', EMP, EMP],
-                vec![EMP, 'a', 'a', EMP],
-                vec![EMP, EMP, EMP, EMP],
-            ],
+            'L' => {
+                self.color = TColor::Orange;
+                [
+                    [EMP, 'a', EMP, EMP],
+                    [EMP, 'a', EMP, EMP],
+                    [EMP, 'a', 'a', EMP],
+                    [EMP, EMP, EMP, EMP],
+                ]
+            }
 
-            'O' => vec![
-                vec![EMP, EMP, EMP, EMP],
-                vec![EMP, 'a', 'a', EMP],
-                vec![EMP, 'a', 'a', EMP],
-                vec![EMP, EMP, EMP, EMP],
-            ],
+            'O' => {
+                self.color = TColor::Yellow;
+                [
+                    [EMP, EMP, EMP, EMP],
+                    [EMP, 'a', 'a', EMP],
+                    [EMP, 'a', 'a', EMP],
+                    [EMP, EMP, EMP, EMP],
+                ]
+            }
 
-            'Z' => vec![
-                vec![EMP, EMP, EMP, EMP],
-                vec!['a', 'a', EMP, EMP],
-                vec![EMP, 'a', 'a', EMP],
-                vec![EMP, EMP, EMP, EMP],
-            ],
+            'Z' => {
+                self.color = TColor::Red;
+                [
+                    [EMP, EMP, EMP, EMP],
+                    ['a', 'a', EMP, EMP],
+                    [EMP, 'a', 'a', EMP],
+                    [EMP, EMP, EMP, EMP],
+                ]
+            }
 
-            'T' => vec![
-                vec![EMP, EMP, EMP, EMP],
-                vec![EMP, 'a', EMP, EMP],
-                vec!['a', 'a', 'a', EMP],
-                vec![EMP, EMP, EMP, EMP],
-            ],
+            'T' => {
+                self.color = TColor::Magenta;
+                [
+                    [EMP, EMP, EMP, EMP],
+                    [EMP, 'a', EMP, EMP],
+                    ['a', 'a', 'a', EMP],
+                    [EMP, EMP, EMP, EMP],
+                ]
+            }
 
-            'S' => vec![
-                vec![EMP, EMP, EMP, EMP],
-                vec![EMP, 'a', 'a', EMP],
-                vec!['a', 'a', EMP, EMP],
-                vec![EMP, EMP, EMP, EMP],
-            ],
+            'S' => {
+                self.color = TColor::Green;
+                [
+                    [EMP, EMP, EMP, EMP],
+                    [EMP, 'a', 'a', EMP],
+                    ['a', 'a', EMP, EMP],
+                    [EMP, EMP, EMP, EMP],
+                ]
+            }
 
             _ => panic!("Unknown shape: {}", shape),
         };
         self.shape = shape;
-        self.state = 0;
+        self.rotation_state = 0;
         self
     }
 
@@ -109,43 +157,43 @@ impl Tetrominoe {
             }
 
             'Z' => {
-                if self.state == 0 {
-                    self.shape = vec![
-                        vec![EMP, EMP, EMP, EMP],
-                        vec![EMP, EMP, 'a', EMP],
-                        vec![EMP, 'a', 'a', EMP],
-                        vec![EMP, 'a', EMP, EMP],
+                if self.rotation_state == 0 {
+                    self.shape = [
+                        [EMP, EMP, EMP, EMP],
+                        [EMP, EMP, 'a', EMP],
+                        [EMP, 'a', 'a', EMP],
+                        [EMP, 'a', EMP, EMP],
                     ];
-                    self.state = 1;
+                    self.rotation_state = 1;
                 } else {
-                    self.shape = vec![
-                        vec![EMP, EMP, EMP, EMP],
-                        vec!['a', 'a', EMP, EMP],
-                        vec![EMP, 'a', 'a', EMP],
-                        vec![EMP, EMP, EMP, EMP],
+                    self.shape = [
+                        [EMP, EMP, EMP, EMP],
+                        ['a', 'a', EMP, EMP],
+                        [EMP, 'a', 'a', EMP],
+                        [EMP, EMP, EMP, EMP],
                     ];
-                    self.state = 0;
+                    self.rotation_state = 0;
                 }
             }
 
             'S' => {
-                if self.state == 0 {
-                    self.shape = vec![
-                        vec![EMP, EMP, EMP, EMP],
-                        vec![EMP, 'a', EMP, EMP],
-                        vec![EMP, 'a', 'a', EMP],
-                        vec![EMP, EMP, 'a', EMP],
+                if self.rotation_state == 0 {
+                    self.shape = [
+                        [EMP, EMP, EMP, EMP],
+                        [EMP, 'a', EMP, EMP],
+                        [EMP, 'a', 'a', EMP],
+                        [EMP, EMP, 'a', EMP],
                     ];
 
-                    self.state = 1;
+                    self.rotation_state = 1;
                 } else {
-                    self.shape = vec![
-                        vec![EMP, EMP, EMP, EMP],
-                        vec![EMP, 'a', 'a', EMP],
-                        vec!['a', 'a', EMP, EMP],
-                        vec![EMP, EMP, EMP, EMP],
+                    self.shape = [
+                        [EMP, EMP, EMP, EMP],
+                        [EMP, 'a', 'a', EMP],
+                        ['a', 'a', EMP, EMP],
+                        [EMP, EMP, EMP, EMP],
                     ];
-                    self.state = 0;
+                    self.rotation_state = 0;
                 }
             }
 
@@ -153,8 +201,8 @@ impl Tetrominoe {
         }
     }
 
-    pub fn from(ptype: char) -> Tetrominoe {
-        Tetrominoe::new().set(ptype).clone()
+    pub fn from(ptype: char, state: Option<State>) -> Tetrominoe {
+        *Tetrominoe::new(state, None).set(ptype)
     }
 
     pub fn random() -> Tetrominoe {
@@ -168,7 +216,20 @@ impl Tetrominoe {
             6 => 'S',
             _ => panic!("Invalid random number"),
         };
-        Tetrominoe::from(ptype)
+        Tetrominoe::from(ptype, None)
+    }
+
+    pub fn as_color(&self) -> Color {
+        match self.color {
+            TColor::Cyan => Color::Cyan,
+            TColor::Blue => Color::Blue,
+            TColor::Orange => Color::Rgb { r: 255, g: 127, b: 0 },
+            TColor::Yellow => Color::Yellow,
+            TColor::Red => Color::Red,
+            TColor::Magenta => Color::Magenta,
+            TColor::Green => Color::Green,
+            TColor::Empty => Color::Black,
+        }
     }
 }
 

@@ -28,7 +28,7 @@ impl GameWrapper {
 
 #[derive(Serialize, Deserialize, Clone, Hash)]
 pub struct GameState {
-    pub display: Vec<Vec<char>>,
+    pub display: Vec<Vec<Tetrominoe>>,
     pub active_piece: Tetrominoe,
     pub gamescore: GameScore,
     pub hold_piece: Option<Tetrominoe>,
@@ -41,7 +41,7 @@ impl GameState {
     pub fn new(width: usize, height: usize) -> Self {
         let mut gs = GameState {
             display: init(width, height),
-            active_piece: Tetrominoe::new(),
+            active_piece: Tetrominoe::new(None, None),
             gamescore: GameScore::new(),
             hold_piece: None,
             next_piece: Tetrominoe::random(),
@@ -49,12 +49,7 @@ impl GameState {
             is_game_over: false,
         };
         init(width, height);
-        new_piece(
-            &mut gs.display,
-            &mut gs.active_piece,
-            None,
-            &mut gs.next_piece,
-        );
+        new_piece(&mut gs, None);
         gs
     }
 

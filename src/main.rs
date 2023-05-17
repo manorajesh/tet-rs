@@ -73,7 +73,7 @@ fn main() {
 
         // gravity
         if gs.counter >= (GRAV_TICK as f64 * LEVEL_MULT.powf(gs.gamescore.level as f64)) as usize {
-            if gravity(&mut gs.display, &mut gs.active_piece, &mut gs.next_piece) {
+            if gravity(&mut gs) {
                 gs.is_game_over = true;
                 break;
             }
@@ -85,42 +85,26 @@ fn main() {
         }
 
         // handle input
-        handle_input(
-            &mut gs.display,
-            key,
-            &mut gs.active_piece,
-            &mut gs.next_piece,
-        );
+        handle_input(&mut gs, key);
 
         // hold piece
         if key == 'c' && !args.hold {
-            hold(
-                &mut gs.display,
-                &mut gs.active_piece,
-                &mut gs.hold_piece,
-                &mut gs.next_piece,
-            );
+            hold(&mut gs);
         }
 
         // full line
-        full_line(&mut gs.display, &mut gs.gamescore);
+        full_line(&mut gs);
 
         // ghost piece
         if !args.ghost {
-            ghost_piece(&mut gs.display, &mut gs.active_piece);
+            ghost_piece(&mut gs);
         }
 
         // check if gs.display was changed
         let is_updated = gs.display != prev_display || gs.is_game_over;
 
         // render
-        render(
-            &gs.display,
-            is_updated,
-            &mut gs.gamescore,
-            &gs.hold_piece,
-            &gs.next_piece,
-        );
+        render(&mut gs, is_updated);
         sleep(Duration::from_millis(args.gravity));
         stdout.flush().unwrap();
         gs.counter += 1;

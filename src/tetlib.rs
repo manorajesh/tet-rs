@@ -13,39 +13,36 @@ use std::{
     time::Duration,
 };
 
-use crate::gamescore::GameScore;
+use crate::{gamestate::GameState, tetrominoe::{State, TColor}};
 use crate::tetrominoe::Tetrominoe;
 
 pub const EMP: char = '.';
 
-pub fn render(
-    display: &[Vec<char>],
-    is_updated: bool,
-    score: &mut GameScore,
-    hold_piece: &Option<Tetrominoe>,
-    next_piece: &Tetrominoe,
-) {
+pub fn render(gs: &mut GameState, is_updated: bool) {
     if !is_updated {
         return;
     }
 
     let mut stdout = stdout();
-    let width: u16 = display[0].len() as u16;
+    let width: u16 = gs.display[0].len() as u16;
 
     stdout.queue(MoveTo(width + 3, 1)).unwrap(); // move cursor to top left
-    for (c, row) in display.iter().enumerate() {
+    for (c, row) in gs.display.iter().enumerate() {
         for ch in row {
-            match ch {
-                &EMP => {
+            match ch.game_state {
+                State::Empty => {
                     stdout.queue(Print(" .")).unwrap();
                 }
-                'a' => {
-                    stdout.queue(Print("[]")).unwrap();
+                State::Active | State::Landed => {
+                    stdout
+                        .queue(SetForegroundColor(ch.as_color()))
+                        .unwrap()
+                        .queue(Print("[]"))
+                        .unwrap()
+                        .queue(ResetColor)
+                        .unwrap();
                 }
-                'l' => {
-                    stdout.queue(Print("[]")).unwrap();
-                }
-                'g' => {
+                State::Ghost => {
                     stdout
                         .queue(SetForegroundColor(Color::Rgb {
                             r: 50,
@@ -58,8 +55,6 @@ pub fn render(
                         .queue(ResetColor)
                         .unwrap();
                 }
-
-                _ => panic!("unknown character: {}", ch),
             }
         }
         stdout.queue(MoveTo(width + 3, (c + 2) as u16)).unwrap();
@@ -69,9 +64,9 @@ pub fn render(
     stdout.queue(MoveTo(2, 1)).unwrap();
     stdout.queue(Print("Hold:")).unwrap();
     stdout.queue(MoveTo(2, 3)).unwrap();
-    match hold_piece {
+    match &gs.hold_piece {
         Some(piece) => {
-            let mut blank = Tetrominoe::new();
+            let mut blank = Tetrominoe::new(None, None);
             let upright = blank.set(piece.ptype);
             for row in 0..upright.shape.len() {
                 for col in 0..upright.shape[row].len() {
@@ -91,15 +86,15 @@ pub fn render(
     // print stats
     stdout.queue(MoveTo(width * 4, 1)).unwrap();
     stdout
-        .queue(Print(format!("Score: {}", score.score)))
+        .queue(Print(format!("Score: {}", gs.gamescore.score)))
         .unwrap();
     stdout.queue(MoveTo(width * 4, 3)).unwrap();
     stdout
-        .queue(Print(format!("Level: {}", score.level)))
+        .queue(Print(format!("Level: {}", gs.gamescore.level)))
         .unwrap();
     stdout.queue(MoveTo(width * 4, 5)).unwrap();
-    score.update();
-    let time = score.get_time();
+    gs.gamescore.update();
+    let time = gs.gamescore.get_time();
     stdout
         .queue(Print(format!("Time: {}:{:02}", time / 60, time % 60)))
         .unwrap();
@@ -108,9 +103,9 @@ pub fn render(
     stdout.queue(MoveTo(width * 4, 8)).unwrap();
     stdout.queue(Print("Next:")).unwrap();
     stdout.queue(MoveTo(width * 4, 10)).unwrap();
-    for row in 0..next_piece.shape.len() {
-        for col in 0..next_piece.shape[row].len() {
-            if next_piece.shape[row][col] == 'a' {
+    for row in 0..gs.next_piece.shape.len() {
+        for col in 0..gs.next_piece.shape[row].len() {
+            if gs.next_piece.shape[row][col] == 'a' {
                 stdout.queue(Print("[]")).unwrap();
             } else {
                 stdout.queue(Print("  ")).unwrap();
@@ -122,12 +117,12 @@ pub fn render(
     stdout.flush().unwrap();
 }
 
-pub fn init(width: usize, height: usize) -> Vec<Vec<char>> {
-    let mut display: Vec<Vec<char>> = Vec::new();
+pub fn init(width: usize, height: usize) -> Vec<Vec<Tetrominoe>> {
+    let mut display: Vec<Vec<Tetrominoe>> = Vec::new();
 
     // generation
     for _ in 0..height {
-        display.push(vec![EMP; width]);
+        display.push(vec![Tetrominoe::default(); width]);
     }
 
     // walls
@@ -161,119 +156,109 @@ pub fn init(width: usize, height: usize) -> Vec<Vec<char>> {
     display
 }
 
-pub fn gravity(
-    display: &mut Vec<Vec<char>>,
-    active_piece: &mut Tetrominoe,
-    next_piece: &mut Tetrominoe,
-) -> bool {
-    let prev_display = display.clone();
-    for row in (0..display.len()).rev() {
-        for col in 0..display[row].len() {
-            if display[row][col] == 'a' {
-                if row == display.len() - 1 || display[row + 1][col] == 'l' {
-                    *display = prev_display;
-                    landed(display);
-                    let game_over = new_piece(display, active_piece, None, next_piece);
+pub fn gravity(gs: &mut GameState) -> bool {
+    let prev_display = gs.display.clone();
+    for row in (0..gs.display.len()).rev() {
+        for col in 0..gs.display[row].len() {
+            if gs.display[row][col].game_state == State::Active {
+                if row == gs.display.len() - 1 || gs.display[row + 1][col].game_state == State::Landed {
+                    gs.display = prev_display;
+                    landed(gs);
+                    let game_over = new_piece(gs, None);
                     return game_over;
                 }
 
-                display[row][col] = EMP;
-                display[row + 1][col] = 'a';
+                gs.display[row + 1][col] = gs.display[row][col];
+                gs.display[row][col] = Tetrominoe::new(None, None);
             }
         }
     }
-    active_piece.row += 1;
+    gs.active_piece.row += 1;
     false
 }
 
-pub fn handle_input(
-    display: &mut Vec<Vec<char>>,
-    key: char,
-    active_piece: &mut Tetrominoe,
-    next_piece: &mut Tetrominoe,
-) {
-    let prev_display = display.clone();
+pub fn handle_input(gs: &mut GameState, key: char) {
+    let prev_display = gs.display.clone();
     match key {
         'l' => {
-            for row in (0..display.len()).rev() {
-                for col in 0..display[row].len() {
-                    if display[row][col] == 'a' {
-                        if col == 0 || display[row][col - 1] == 'l' {
-                            *display = prev_display;
+            for row in (0..gs.display.len()).rev() {
+                for col in 0..gs.display[row].len() {
+                    if gs.display[row][col].game_state == State::Active {
+                        if col == 0 || gs.display[row][col - 1].game_state == State::Landed {
+                            gs.display = prev_display;
                             return;
                         }
-                        display[row][col] = EMP;
-                        display[row][col - 1] = 'a';
+                        gs.display[row][col - 1] = gs.display[row][col];
+                        gs.display[row][col] = Tetrominoe::new(None, None);
                     }
                 }
             }
 
-            if active_piece.col > 0 {
-                active_piece.col -= 1;
+            if gs.active_piece.col > 0 {
+                gs.active_piece.col -= 1;
             }
         }
 
         'r' => {
-            for row in (0..display.len()).rev() {
-                for col in (0..display[row].len()).rev() {
-                    if display[row][col] == 'a' {
-                        if col == display[row].len() - 1 || display[row][col + 1] == 'l' {
-                            *display = prev_display;
+            for row in (0..gs.display.len()).rev() {
+                for col in (0..gs.display[row].len()).rev() {
+                    if gs.display[row][col].game_state == State::Active {
+                        if col == gs.display[row].len() - 1 || gs.display[row][col + 1].game_state == State::Landed {
+                            gs.display = prev_display;
                             return;
                         }
-                        display[row][col] = EMP;
-                        display[row][col + 1] = 'a';
+                        gs.display[row][col + 1] = gs.display[row][col];
+                        gs.display[row][col] = Tetrominoe::new(None, None);
                     }
                 }
             }
-            active_piece.col += 1;
+            gs.active_piece.col += 1;
         }
 
         's' => {
             // bring down piece until new piece is created
-            while display[0][display[0].len() / 2] == EMP {
-                gravity(display, active_piece, next_piece);
+            while gs.display[0][gs.display[0].len() / 2].game_state == State::Empty {
+                gravity(gs);
             }
         }
 
         'd' => {
-            gravity(display, active_piece, next_piece);
+            gravity(gs);
         }
 
         'u' => {
-            // let prev_display = display.clone();
-            let prev_piece = active_piece.clone();
+            // let prev_display = gs.display.clone();
+            let prev_piece = gs.active_piece.clone();
 
             // rotate piece
-            active_piece.rotate();
-            if active_piece.row + 4 > display.len() {
-                active_piece.row = display.len() - 4;
+            gs.active_piece.rotate();
+            if gs.active_piece.row + 4 > gs.display.len() {
+                gs.active_piece.row = gs.display.len() - 4;
             }
 
-            if active_piece.col + 4 > display[0].len() {
-                active_piece.col = display[0].len() - 4;
+            if gs.active_piece.col + 4 > gs.display[0].len() {
+                gs.active_piece.col = gs.display[0].len() - 4;
             }
 
             // clear piece and replace with new rotated piece
-            for row in 0..display.len() {
-                for col in 0..display[row].len() {
-                    if display[row][col] == 'a' {
-                        display[row][col] = EMP;
+            for row in 0..gs.display.len() {
+                for col in 0..gs.display[row].len() {
+                    if gs.display[row][col].game_state == State::Active {
+                        gs.display[row][col] = Tetrominoe::new(None, None);
                     }
                 }
             }
 
-            for row in active_piece.row..active_piece.row + 4 {
-                for col in active_piece.col..active_piece.col + 4 {
-                    if display[row][col] == 'l' {
-                        *display = prev_display;
-                        *active_piece = prev_piece;
+            for row in gs.active_piece.row..gs.active_piece.row + 4 {
+                for col in gs.active_piece.col..gs.active_piece.col + 4 {
+                    if gs.display[row][col].game_state == State::Landed {
+                        gs.display = prev_display;
+                        gs.active_piece = prev_piece;
                         return;
                     }
 
-                    if active_piece.shape[row - active_piece.row][col - active_piece.col] == 'a' {
-                        display[row][col] =
-                            active_piece.shape[row - active_piece.row][col - active_piece.col];
+                    if gs.active_piece.shape[row - gs.active_piece.row][col - gs.active_piece.col] == 'a' {
+                        gs.display[row][col] = Tetrominoe::new(Some(State::Active), Some(gs.active_piece.color));
                     }
                 }
             }
@@ -283,157 +268,151 @@ pub fn handle_input(
     }
 }
 
-pub fn new_piece(
-    display: &mut Vec<Vec<char>>,
-    active_piece: &mut Tetrominoe,
-    desired_piece: Option<char>,
-    next_piece: &mut Tetrominoe,
-) -> bool {
-    let half_width = display[0].len() / 2;
+pub fn new_piece(gs: &mut GameState, desired_piece: Option<char>) -> bool {
+    let half_width = gs.display[0].len() / 2;
 
     // game over
-    if display[0][half_width] != EMP {
+    if gs.display[0][half_width].game_state != State::Empty {
         return true;
     }
 
-    let piece = desired_piece.unwrap_or_else(|| get_next_piece(next_piece));
+    let piece = desired_piece.unwrap_or_else(|| get_next_piece(&mut gs.next_piece));
     match piece {
         'I' => {
             // I
             // I
             // I
             // I
-            display[0][half_width] = 'a';
-            display[1][half_width] = 'a';
-            display[2][half_width] = 'a';
-            display[3][half_width] = 'a';
+            gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Cyan));
+            gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Cyan));
+            gs.display[2][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Cyan));
+            gs.display[3][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Cyan));
         }
         'J' => {
             //  J
             //  J
             // JJ
-            display[0][half_width] = 'a';
-            display[1][half_width] = 'a';
-            display[2][half_width] = 'a';
-            display[2][half_width - 1] = 'a';
+            gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Blue));
+            gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Blue));
+            gs.display[2][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Blue));
+            gs.display[2][half_width - 1] = Tetrominoe::new(Some(State::Active), Some(TColor::Blue));
         }
         'L' => {
             // L
             // L
             // LL
-            display[0][half_width] = 'a';
-            display[1][half_width] = 'a';
-            display[2][half_width] = 'a';
-            display[2][half_width + 1] = 'a';
+            gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Orange));
+            gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Orange));
+            gs.display[2][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Orange));
+            gs.display[2][half_width + 1] = Tetrominoe::new(Some(State::Active), Some(TColor::Orange));
         }
         'O' => {
             // OO
             // OO
-            display[0][half_width] = 'a';
-            display[0][half_width + 1] = 'a';
-            display[1][half_width] = 'a';
-            display[1][half_width + 1] = 'a';
+            gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Yellow));
+            gs.display[0][half_width + 1] = Tetrominoe::new(Some(State::Active), Some(TColor::Yellow));
+            gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Yellow));
+            gs.display[1][half_width + 1] = Tetrominoe::new(Some(State::Active), Some(TColor::Yellow));
         }
         'S' => {
             // SS
             //  SS
-            display[0][half_width] = 'a';
-            display[0][half_width + 1] = 'a';
-            display[1][half_width - 1] = 'a';
-            display[1][half_width] = 'a';
+            gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Green));
+            gs.display[0][half_width + 1] = Tetrominoe::new(Some(State::Active), Some(TColor::Green));
+            gs.display[1][half_width - 1] = Tetrominoe::new(Some(State::Active), Some(TColor::Green));
+            gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Green));
         }
         'T' => {
             // T
             // TT
             // T
-            display[0][half_width] = 'a';
-            display[1][half_width - 1] = 'a';
-            display[1][half_width] = 'a';
-            display[1][half_width + 1] = 'a';
+            gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Magenta));
+            gs.display[1][half_width - 1] = Tetrominoe::new(Some(State::Active), Some(TColor::Magenta));
+            gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Magenta));
+            gs.display[1][half_width + 1] = Tetrominoe::new(Some(State::Active), Some(TColor::Magenta));
         }
         'Z' => {
             //  ZZ
             // ZZ
-            display[0][half_width - 1] = 'a';
-            display[0][half_width] = 'a';
-            display[1][half_width] = 'a';
-            display[1][half_width + 1] = 'a';
+            gs.display[0][half_width - 1] = Tetrominoe::new(Some(State::Active), Some(TColor::Red));
+            gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Red));
+            gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Red));
+            gs.display[1][half_width + 1] = Tetrominoe::new(Some(State::Active), Some(TColor::Red));
         }
         _ => panic!("unknown picece: {}", piece),
     }
-    active_piece.set(piece);
-    active_piece.set_pos(0, half_width - 1);
+    gs.active_piece.set(piece);
+    gs.active_piece.set_pos(0, half_width - 1);
     false
 }
 
-pub fn landed(display: &mut Vec<Vec<char>>) {
-    for row in display {
+pub fn landed(gs: &mut GameState) {
+    for row in &mut gs.display {
         for ch in row {
-            if *ch == 'a' {
-                *ch = 'l';
+            if ch.game_state == State::Active {
+                ch.game_state = State::Landed;
             }
         }
     }
 }
 
-pub fn full_line(display: &mut Vec<Vec<char>>, score: &mut GameScore) {
+pub fn full_line(gs: &mut GameState) {
     let mut lines: usize = 0;
-    'outer: for row in (0..display.len()).rev() {
-        for ch in &display[row] {
-            if *ch != 'l' {
+    'outer: for row in (0..gs.display.len()).rev() {
+        for ch in &gs.display[row] {
+            if ch.game_state != State::Landed {
                 continue 'outer;
             }
         }
-        display.remove(row);
+        gs.display.remove(row);
         lines += 1;
     }
 
     for _ in 0..lines {
-        display.insert(0, vec![EMP; display[0].len()]); // add new line at the top
+        gs.display.insert(0, vec![Tetrominoe::default(); gs.display[0].len()]); // add new line at the top
     }
 
     match lines {
-        1 => score.score += 40 * (score.level + 1),
-        2 => score.score += 100 * (score.level + 1),
-        3 => score.score += 300 * (score.level + 1),
-        4 => score.score += 1200 * (score.level + 1),
+        1 => gs.gamescore.score += 40 * (gs.gamescore.level + 1),
+        2 => gs.gamescore.score += 100 * (gs.gamescore.level + 1),
+        3 => gs.gamescore.score += 300 * (gs.gamescore.level + 1),
+        4 => gs.gamescore.score += 1200 * (gs.gamescore.level + 1),
         _ => (),
     }
 
-    score.level = score.score / 1000;
+    gs.gamescore.level = gs.gamescore.score / 1000;
 }
 
-pub fn ghost_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) {
-    for row in 0..display.len() {
-        for col in 0..display[row].len() {
-            if display[row][col] == 'g' {
-                display[row][col] = EMP;
+pub fn ghost_piece(gs: &mut GameState) {
+    for row in 0..gs.display.len() {
+        for col in 0..gs.display[row].len() {
+            if gs.display[row][col].game_state == State::Ghost {
+                gs.display[row][col].game_state = State::Empty;
             }
         }
     }
 
-    let mut ghost = display.clone();
-    let mut active_piece = active_piece.clone();
+    let mut ghost = gs.clone();
 
-    gravity_until_new_piece(&mut ghost, &mut active_piece);
+    gravity_until_new_piece(&mut ghost);
 
-    for row in 0..ghost.len() {
-        for col in 0..ghost[row].len() {
-            if ghost[row][col] == 'a' && display[row][col] == EMP {
-                display[row][col] = 'g';
+    for row in 0..ghost.display.len() {
+        for col in 0..ghost.display[row].len() {
+            if ghost.display[row][col].game_state == State::Active && gs.display[row][col].game_state == State::Empty {
+                gs.display[row][col].game_state = State::Ghost;
             }
         }
     }
 }
 
-fn gravity_until_new_piece(display: &mut Vec<Vec<char>>, active_piece: &mut Tetrominoe) {
-    let mut prev_display = display.clone();
-    gravity(display, active_piece, &mut Tetrominoe::random());
-    while display[0][display[0].len() / 2] == EMP {
-        prev_display = display.clone();
-        gravity(display, active_piece, &mut Tetrominoe::random());
+fn gravity_until_new_piece(gs: &mut GameState) {
+    let mut prev_display = gs.display.clone();
+    gravity(gs);
+    while gs.display[0][gs.display[0].len() / 2].game_state == State::Empty {
+        prev_display = gs.display.clone();
+        gravity(gs);
     }
-    *display = prev_display;
+    gs.display = prev_display;
 }
 
 pub fn get_input() -> char {
@@ -489,29 +468,24 @@ pub fn get_input() -> char {
     }
 }
 
-pub fn hold(
-    display: &mut Vec<Vec<char>>,
-    active_piece: &mut Tetrominoe,
-    hold_piece: &mut Option<Tetrominoe>,
-    next_piece: &mut Tetrominoe,
-) {
+pub fn hold(gs: &mut GameState) {
     // clear piece
-    for row in display.iter_mut() {
+    for row in gs.display.iter_mut() {
         for col in row.iter_mut() {
-            if *col == 'a' {
-                *col = EMP;
+            if col.game_state == State::Active {
+                col.game_state = State::Empty;
             }
         }
     }
 
     // hold piece
-    if let Some(hold) = hold_piece {
-        let prev_piece = active_piece.clone();
-        new_piece(display, active_piece, Some(hold.ptype), next_piece);
-        *hold_piece = Some(prev_piece);
+    if let Some(hold) = &gs.hold_piece {
+        let prev_piece = gs.active_piece.clone();
+        new_piece(gs, Some(hold.ptype));
+        gs.hold_piece = Some(prev_piece);
     } else {
-        *hold_piece = Some(active_piece.clone());
-        new_piece(display, active_piece, None, next_piece);
+        gs.hold_piece = Some(gs.active_piece.clone());
+        new_piece(gs, None);
     }
 }
 
