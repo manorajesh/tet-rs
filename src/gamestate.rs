@@ -54,22 +54,22 @@ impl GameState {
         gs
     }
 
-    pub fn serial(&mut self) {
+    // return true if user wants to repeat
+    pub fn serial(&mut self) -> bool {
         // repeat
-        if confirmation("Repeat game?") {
-            // stack overflow?
-            crate::main();
+        if confirmation("New game?") {
+            return true;
         }
 
         // saving
         if !confirmation("Save game?") {
-            return;
+            return false;
         }
 
         let path = String::from("save.tetris");
 
         if Path::new(&path).exists() && !confirmation("Overwrite save?") {
-            return;
+            return false;
         }
 
         let mut file = OpenOptions::new()
@@ -90,11 +90,12 @@ impl GameState {
 
         if !game_wrapper.verify() {
             println!("Hash verification failed. Aborting save.");
-            return;
+            return false;
         }
 
         let serialized_data = serialize(&game_wrapper).expect("Failed to serialize game.");
         file.write_all(&serialized_data).unwrap();
+        false
     }
 
     pub fn deserial(path: String, width: usize, height: usize) -> Self {

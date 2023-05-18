@@ -1,6 +1,6 @@
 [package]
 name = "tet-ris"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 description = "A play a quick game of 1984-ish Tetris right in the terminal!"
 readme = "README.md"
