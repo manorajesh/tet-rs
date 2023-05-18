@@ -1,5 +1,6 @@
-use crate::tetlib::new_piece;
+use crate::tetlib::{get_input, new_piece, put_text};
 use crate::{gamescore::GameScore, tetlib::init, tetrominoe::Tetrominoe};
+use crate::{HEIGHT, WIDTH};
 use bincode::{deserialize, serialize};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
@@ -54,17 +55,20 @@ impl GameState {
     }
 
     pub fn serial(&mut self) {
+        // repeat
+        if confirmation("Repeat game?") {
+            // stack overflow?
+            crate::main();
+        }
+
+        // saving
         if !confirmation("Save game?") {
             return;
         }
 
-        let path = if confirmation("Use default save file?") {
-            String::from("save.tetris")
-        } else {
-            handle_input!("Enter path to save file: ")
-        };
+        let path = String::from("save.tetris");
 
-        if Path::new(&path).exists() && !confirmation("Overwrite save file?") {
+        if Path::new(&path).exists() && !confirmation("Overwrite save?") {
             return;
         }
 
@@ -121,28 +125,30 @@ impl GameState {
 
 fn confirmation(prompt: &str) -> bool {
     loop {
-        println!("{} (y/n): ", prompt);
-        let stdin = std::io::stdin();
-        let mut buf = String::new();
-        stdin.read_line(&mut buf).unwrap();
-        println!();
-        match buf.trim() {
-            "y" => return true,
-            "n" => return false,
-            _ => continue,
+        put_text(
+            WIDTH.try_into().unwrap(),
+            HEIGHT.try_into().unwrap(),
+            format!("{} (y/n)", prompt).as_str(),
+        );
+        loop {
+            let key = get_input();
+            match key {
+                'y' => return true,
+                'n' => return false,
+                _ => continue,
+            }
         }
     }
 }
 
-#[macro_export]
-macro_rules! handle_input {
-    ($x:expr) => {{
-        print!("{}", $x);
-        std::io::stdout().flush().unwrap();
-        let stdin = std::io::stdin();
-        let mut buf = String::new();
-        stdin.read_line(&mut buf).unwrap();
-        buf.trim().to_string()
-    }};
-}
-pub(crate) use handle_input;
+// #[macro_export]
+// macro_rules! handle_input {
+//     ($x:expr) => {{
+//         print!("{}", $x);
+//         std::io::stdout().flush().unwrap();
+//         let stdin = std::io::stdin();
+//         let mut buf = String::new();
+//         stdin.read_line(&mut buf).unwrap();
+//         buf.trim().to_string()
+//     }};
+// }

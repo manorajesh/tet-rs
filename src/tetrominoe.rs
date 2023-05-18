@@ -1,7 +1,7 @@
-use std::time::SystemTime;
+use crossterm::style::Color;
 use oorandom::Rand32;
 use serde::{Deserialize, Serialize};
-use crossterm::style::Color;
+use std::time::SystemTime;
 
 use crate::tetlib::EMP;
 
@@ -223,7 +223,11 @@ impl Tetrominoe {
         match self.color {
             TColor::Cyan => Color::Cyan,
             TColor::Blue => Color::Blue,
-            TColor::Orange => Color::Rgb { r: 255, g: 127, b: 0 },
+            TColor::Orange => Color::Rgb {
+                r: 255,
+                g: 127,
+                b: 0,
+            },
             TColor::Yellow => Color::Yellow,
             TColor::Red => Color::Red,
             TColor::Magenta => Color::Magenta,

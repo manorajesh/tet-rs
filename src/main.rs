@@ -23,11 +23,12 @@ use clap::Parser;
 use gamestate::GameState;
 use tetlib::*;
 
+pub const WIDTH: usize = 10;
+pub const HEIGHT: usize = 20;
+
 fn main() {
     let args = args::Args::parse();
 
-    const WIDTH: usize = 10;
-    const HEIGHT: usize = 20;
     const MAX_LEVEL: usize = 20;
     const GRAV_TICK: usize = 40;
     const LEVEL_MULT: f64 = 0.85;
@@ -110,11 +111,11 @@ fn main() {
         gs.counter += 1;
     }
 
-    put_text(WIDTH as u16, HEIGHT as u16, "G A M E  O V E R");
-    disable_raw_mode().unwrap();
-    execute!(stdout, Show).unwrap();
-    print!("{}", "\n".repeat(HEIGHT / 2 + 4));
+    // put_text(WIDTH as u16, HEIGHT as u16, "G A M E  O V E R");
     gs.serial();
+    disable_raw_mode().unwrap();
+    print!("{}", "\n".repeat(HEIGHT / 2 + 4));
+    execute!(stdout, Show).unwrap();
 }
 
 fn path_exists(path: &String) -> bool {
