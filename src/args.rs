@@ -26,7 +26,19 @@ pub struct Args {
     )]
     pub gravity: u64,
 
-    /// path to save file [default: save.tetris]
+    /// Path to save file [default: save.tetris]
     #[clap(short, long, value_name = "FILE", value_hint = ValueHint::FilePath)]
     pub save: Option<String>,
+
+    /// Characters to use for tetrominoes
+    #[clap(long, value_name = "2 CHARACTERS", default_value = "██")]
+    pub chars: String,
+
+    /// Disable colors
+    #[clap(long = "no-colors", action)]
+    pub no_colors: bool,
+
+    /// Return to 1984 Tetris
+    #[clap(short, long = "original", action)]
+    pub og: bool,
 }

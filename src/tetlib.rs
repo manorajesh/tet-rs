@@ -21,7 +21,7 @@ use crate::{
 
 pub const EMP: char = '.';
 
-pub fn render(gs: &mut GameState, is_updated: bool) {
+pub fn render(gs: &mut GameState, is_updated: bool, block_characters: &String, colors: &bool) {
     if !is_updated {
         return;
     }
@@ -37,10 +37,12 @@ pub fn render(gs: &mut GameState, is_updated: bool) {
                     stdout.queue(Print("  ")).unwrap();
                 }
                 State::Active | State::Landed => {
+                    let color = if !colors { ch.as_color() } else { Color::White };
+
                     stdout
-                        .queue(SetForegroundColor(ch.as_color()))
+                        .queue(SetForegroundColor(color))
                         .unwrap()
-                        .queue(Print("██"))
+                        .queue(Print(block_characters))
                         .unwrap()
                         .queue(ResetColor)
                         .unwrap();
@@ -74,10 +76,16 @@ pub fn render(gs: &mut GameState, is_updated: bool) {
             for row in 0..upright.shape.len() {
                 for col in 0..upright.shape[row].len() {
                     if upright.shape[row][col] == 'a' {
+                        let color = if !colors {
+                            piece.as_color()
+                        } else {
+                            Color::White
+                        };
+
                         stdout
-                            .queue(SetForegroundColor(piece.as_color()))
+                            .queue(SetForegroundColor(color))
                             .unwrap()
-                            .queue(Print("██"))
+                            .queue(Print(block_characters))
                             .unwrap()
                             .queue(ResetColor)
                             .unwrap();
@@ -115,10 +123,16 @@ pub fn render(gs: &mut GameState, is_updated: bool) {
     for row in 0..gs.next_piece.shape.len() {
         for col in 0..gs.next_piece.shape[row].len() {
             if gs.next_piece.shape[row][col] == 'a' {
+                let color = if !colors {
+                    gs.next_piece.as_color()
+                } else {
+                    Color::White
+                };
+
                 stdout
-                    .queue(SetForegroundColor(gs.next_piece.as_color()))
+                    .queue(SetForegroundColor(color))
                     .unwrap()
-                    .queue(Print("██"))
+                    .queue(Print(block_characters))
                     .unwrap()
                     .queue(ResetColor)
                     .unwrap();

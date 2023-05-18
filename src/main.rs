@@ -27,7 +27,12 @@ pub const WIDTH: usize = 10;
 pub const HEIGHT: usize = 20;
 
 fn main() {
-    let args = args::Args::parse();
+    let mut args = args::Args::parse();
+
+    if args.og {
+        args.no_colors = true;
+        args.chars = "[]".to_string();
+    }
 
     const MAX_LEVEL: usize = 20;
     const GRAV_TICK: usize = 40;
@@ -74,7 +79,9 @@ fn main() {
             }
 
             // gravity
-            if gs.counter >= (GRAV_TICK as f64 * LEVEL_MULT.powf(gs.gamescore.level as f64)) as usize {
+            if gs.counter
+                >= (GRAV_TICK as f64 * LEVEL_MULT.powf(gs.gamescore.level as f64)) as usize
+            {
                 if gravity(&mut gs) {
                     gs.is_game_over = true;
                     break;
@@ -106,17 +113,17 @@ fn main() {
             let is_updated = gs.display != prev_display || gs.is_game_over;
 
             // render
-            render(&mut gs, is_updated);
+            render(&mut gs, is_updated, &args.chars, &args.no_colors);
             sleep(Duration::from_millis(args.gravity));
             stdout.flush().unwrap();
             gs.counter += 1;
         }
-    
-    // put_text(WIDTH as u16, HEIGHT as u16, "G A M E  O V E R");
-    if !gs.serial() {
-        break;
-    }
-    gs = GameState::new(WIDTH, HEIGHT);
+
+        // put_text(WIDTH as u16, HEIGHT as u16, "G A M E  O V E R");
+        if !gs.serial() {
+            break;
+        }
+        gs = GameState::new(WIDTH, HEIGHT);
     }
     disable_raw_mode().unwrap();
     print!("{}", "\n".repeat(HEIGHT / 2 + 4));
