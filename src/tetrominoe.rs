@@ -1,9 +1,7 @@
 use crossterm::style::Color;
-use oorandom::Rand32;
 use serde::{Deserialize, Serialize};
-use std::time::SystemTime;
 
-use crate::tetlib::EMP;
+use crate::{bag::Bag, tetlib::EMP};
 
 #[derive(Clone, PartialEq, Debug, Copy, Default, Deserialize, Serialize, Hash)]
 pub enum TColor {
@@ -139,7 +137,7 @@ impl Tetrominoe {
     pub fn rotate(&mut self) {
         match self.ptype {
             'O' => (),
-            'I' | 'J' | 'L' | 'T' => {
+            'I' | 'J' | 'L' => {
                 // transpose or swap rows and columns
                 let n = self.shape.len();
                 for i in 0..n {
@@ -197,6 +195,52 @@ impl Tetrominoe {
                 }
             }
 
+            'T' => {
+                self.shape = match self.rotation_state {
+                    0 => {
+                        self.rotation_state += 1;
+                        [
+                            [EMP, 'a', EMP, EMP],
+                            [EMP, 'a', 'a', EMP],
+                            [EMP, 'a', EMP, EMP],
+                            [EMP, EMP, EMP, EMP],
+                        ]
+                    }
+
+                    1 => {
+                        self.rotation_state += 1;
+                        [
+                            [EMP, EMP, EMP, EMP],
+                            ['a', 'a', 'a', EMP],
+                            [EMP, 'a', EMP, EMP],
+                            [EMP, EMP, EMP, EMP],
+                        ]
+                    }
+
+                    2 => {
+                        self.rotation_state += 1;
+                        [
+                            [EMP, 'a', EMP, EMP],
+                            ['a', 'a', EMP, EMP],
+                            [EMP, 'a', EMP, EMP],
+                            [EMP, EMP, EMP, EMP],
+                        ]
+                    }
+
+                    3 => {
+                        self.rotation_state = 0;
+                        [
+                            [EMP, 'a', EMP, EMP],
+                            ['a', 'a', 'a', EMP],
+                            [EMP, EMP, EMP, EMP],
+                            [EMP, EMP, EMP, EMP],
+                        ]
+                    }
+
+                    _ => panic!("Unknown rotation state: {}", self.rotation_state),
+                }
+            }
+
             _ => panic!("Unknown shape: {}", self.ptype),
         }
     }
@@ -205,18 +249,9 @@ impl Tetrominoe {
         *Tetrominoe::new(state, None).set(ptype)
     }
 
-    pub fn random() -> Tetrominoe {
-        let ptype = match getrandom(7) {
-            0 => 'I',
-            1 => 'J',
-            2 => 'L',
-            3 => 'O',
-            4 => 'Z',
-            5 => 'T',
-            6 => 'S',
-            _ => panic!("Invalid random number"),
-        };
-        Tetrominoe::from(ptype, None)
+    pub fn random(bag: &mut Bag) -> Tetrominoe {
+        let piece = bag.draw();
+        Tetrominoe::from(piece, None)
     }
 
     pub fn as_color(&self) -> Color {
@@ -235,12 +270,4 @@ impl Tetrominoe {
             TColor::Empty => Color::Black,
         }
     }
-}
-
-fn getrandom(end: u32) -> u32 {
-    let time_from_epoch = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    Rand32::new(time_from_epoch).rand_range(0..end)
 }

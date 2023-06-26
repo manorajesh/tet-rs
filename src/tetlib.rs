@@ -34,7 +34,7 @@ pub fn render(gs: &mut GameState, is_updated: bool, block_characters: &String, c
         for ch in row {
             match ch.game_state {
                 State::Empty => {
-                    stdout.queue(Print("  ")).unwrap();
+                    stdout.queue(Print(" .")).unwrap();
                 }
                 State::Active | State::Landed => {
                     let color = if !colors { ch.as_color() } else { Color::White };
@@ -312,7 +312,7 @@ pub fn new_piece(gs: &mut GameState, desired_piece: Option<char>) -> bool {
         return true;
     }
 
-    let piece = desired_piece.unwrap_or_else(|| get_next_piece(&mut gs.next_piece));
+    let piece = desired_piece.unwrap_or_else(|| get_next_piece(gs));
     match piece {
         'I' => {
             // I
@@ -547,9 +547,9 @@ pub fn hold(gs: &mut GameState) {
     }
 }
 
-fn get_next_piece(next_piece: &mut Tetrominoe) -> char {
-    let temp = next_piece.ptype;
-    *next_piece = Tetrominoe::random();
+fn get_next_piece(gs: &mut GameState) -> char {
+    let temp = gs.next_piece.ptype;
+    gs.next_piece = Tetrominoe::random(&mut gs.bag);
     temp
 }
 
@@ -559,11 +559,7 @@ pub fn put_text(width: u16, height: u16, text: &str) {
     // top bar
     stdout.queue(MoveTo(width + 3, height / 2 - 2)).unwrap();
     stdout
-        .queue(SetForegroundColor(Color::Rgb {
-            r: 255,
-            g: 105,
-            b: 97,
-        }))
+        .queue(SetForegroundColor(Color::Red))
         .unwrap()
         .queue(Print("=".repeat(width as usize * 2)))
         .unwrap()
@@ -576,11 +572,7 @@ pub fn put_text(width: u16, height: u16, text: &str) {
     // text
     stdout.queue(MoveTo(width + 3, height / 2)).unwrap();
     stdout
-        .queue(SetForegroundColor(Color::Rgb {
-            r: 255,
-            g: 105,
-            b: 97,
-        }))
+        .queue(SetForegroundColor(Color::Red))
         .unwrap()
         .queue(Print(format!(
             "{:^text_width$}",
@@ -597,11 +589,7 @@ pub fn put_text(width: u16, height: u16, text: &str) {
     // bottom bar
     stdout.queue(MoveTo(width + 3, height / 2 + 2)).unwrap();
     stdout
-        .queue(SetForegroundColor(Color::Rgb {
-            r: 255,
-            g: 105,
-            b: 97,
-        }))
+        .queue(SetForegroundColor(Color::Red))
         .unwrap()
         .queue(Print("=".repeat(width as usize * 2)))
         .unwrap()

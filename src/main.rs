@@ -1,6 +1,7 @@
 // Tetris
 
 mod args;
+mod bag;
 mod gamescore;
 mod gamestate;
 mod tetlib;

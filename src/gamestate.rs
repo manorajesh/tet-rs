@@ -1,3 +1,4 @@
+use crate::bag::Bag;
 use crate::tetlib::{get_input, new_piece, put_text};
 use crate::{gamescore::GameScore, tetlib::init, tetrominoe::Tetrominoe};
 use crate::{HEIGHT, WIDTH};
@@ -36,6 +37,7 @@ pub struct GameState {
     pub next_piece: Tetrominoe,
     pub counter: usize,
     pub is_game_over: bool,
+    pub bag: Bag,
 }
 
 impl GameState {
@@ -45,9 +47,10 @@ impl GameState {
             active_piece: Tetrominoe::new(None, None),
             gamescore: GameScore::new(),
             hold_piece: None,
-            next_piece: Tetrominoe::random(),
+            next_piece: Tetrominoe::random(&mut Bag::new()),
             counter: 0,
             is_game_over: false,
+            bag: Bag::new(),
         };
         init(width, height);
         new_piece(&mut gs, None);
