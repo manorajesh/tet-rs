@@ -31,12 +31,15 @@ Play Tetris 1984ish in your terminal!
 Usage: tet-ris [OPTIONS]
 
 Options:
-  -g, --ghost                Disable ghost piece shown at the bottom of the board
-  -c, --hold                 Disable hold piece with 'c' key
-  -t, --tick <MILLISECONDS>  Gravity speed for the game [default: 10]
-  -s, --save <FILE>          path to save file [default: save.tetris]
-  -h, --help                 Print help (see more with '--help')
-  -V, --version              Print version
+  -g, --ghost                 Disable ghost piece shown at the bottom of the board
+  -c, --hold                  Disable hold piece with 'c' key
+  -t, --tick <MILLISECONDS>   Gravity speed for the game [default: 10]
+  -s, --save <FILE>           Path to save file [default: save.tetris]
+      --chars <2 CHARACTERS>  Characters to use for tetrominoes [default: ██]
+      --no-colors             Disable colors
+  -o, --original              Return to 1984 Tetris
+  -h, --help                  Print help (see more with '--help')
+  -V, --version               Print version
 ```
 
 ### How to Play
