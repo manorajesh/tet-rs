@@ -41,4 +41,8 @@ pub struct Args {
     /// Return to 1984 Tetris
     #[clap(short, long = "original", action)]
     pub og: bool,
+
+    /// Play Sirtet (Upside-down Tetris)
+    #[clap(long = "sirtet", action)]
+    pub sirtet: bool,
 }

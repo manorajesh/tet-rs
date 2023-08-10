@@ -16,7 +16,7 @@ use std::{
 use crossterm::{
     cursor::Show,
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
 use clap::Parser;
@@ -40,6 +40,7 @@ fn main() {
     const LEVEL_MULT: f64 = 0.85;
 
     let mut stdout = stdout();
+    execute!(stdout, EnterAlternateScreen).unwrap();
     enable_raw_mode().unwrap();
     let mut gs = if let Some(path) = &args.save {
         if path_exists(path) {
@@ -53,6 +54,10 @@ fn main() {
 
     if gs.is_game_over {
         gs.gamescore.stop_timer();
+    }
+
+    if args.sirtet {
+        sirtet_borders(WIDTH, HEIGHT);
     }
 
     // loop for new game
@@ -114,7 +119,13 @@ fn main() {
             let is_updated = gs.display != prev_display || gs.is_game_over;
 
             // render
-            render(&mut gs, is_updated, &args.chars, &args.no_colors);
+            render(
+                &mut gs,
+                is_updated,
+                &args.chars,
+                &args.no_colors,
+                &args.sirtet,
+            );
             sleep(Duration::from_millis(args.gravity));
             stdout.flush().unwrap();
             gs.counter += 1;
@@ -127,7 +138,7 @@ fn main() {
         gs = GameState::new(WIDTH, HEIGHT);
     }
     disable_raw_mode().unwrap();
-    print!("{}", "\n".repeat(HEIGHT / 2 + 4));
+    execute!(stdout, LeaveAlternateScreen).unwrap();
     execute!(stdout, Show).unwrap();
 }
 

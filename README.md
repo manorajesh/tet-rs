@@ -6,7 +6,9 @@
 ![Version](https://img.shields.io/crates/v/tet-ris)
 ![License](https://img.shields.io/crates/l/tet-ris)
 
-[Civil-War-Reenactment](https://www.reddit.com/r/programming/comments/wu56a0/comment/ilauaz0/?utm_source=share&utm_medium=web3x) Style of Tetris 1984 (with some quality-of-life improvements) in Rust!
+[Civil-War-Reenactment](https://www.reddit.com/r/programming/comments/wu56a0/comment/ilauaz0/?utm_source=share&utm_medium=web3x) Style of Tetris 1984 (with some quality-of-life improvements) in Rust! 
+
+<sub><sup>play upside-down as well!</sup></sub>
 
 [![demo](https://asciinema.org/a/0PSmnvMDN4jZkJEKsC8J1bZTG.svg)](https://asciinema.org/a/0PSmnvMDN4jZkJEKsC8J1bZTG?t=5?autoplay=1)
 
@@ -38,6 +40,7 @@ Options:
       --chars <2 CHARACTERS>  Characters to use for tetrominoes [default: ██]
       --no-colors             Disable colors
   -o, --original              Return to 1984 Tetris
+      --sirtet                Play Sirtet (Upside-down Tetris)
   -h, --help                  Print help (see more with '--help')
   -V, --version               Print version
 ```
@@ -56,6 +59,10 @@ The objective of Tetris is to move and rotate falling pieces called tetrominoes 
 * `Q`: Quit the game.
 
 ### Gameplay Images
+
+<img src="https://github.com/manorajesh/tet-ris/blob/master/images/color.png?raw=true" width=400>
+
+<img src="https://github.com/manorajesh/tet-ris/blob/master/images/sirtet.png?raw=true" width=400>
 
 <img src="https://github.com/manorajesh/tet-ris/blob/master/images/game.png?raw=true" width=400>
 

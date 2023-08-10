@@ -1,6 +1,6 @@
 [package]
 name = "tet-ris"
-version = "0.6.1"
+version = "0.6.3"
 edition = "2021"
 description = "A play a quick game of 1984-ish Tetris right in the terminal!"
 readme = "README.md"
@@ -23,4 +23,4 @@ rand = { version = ">=0.8.5" }
 lto = "fat"
 codegen-units = 1
 panic = "abort"
-debug = 1
+debug = false

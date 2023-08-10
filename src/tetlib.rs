@@ -21,16 +21,28 @@ use crate::{
 
 pub const EMP: char = '.';
 
-pub fn render(gs: &mut GameState, is_updated: bool, block_characters: &String, colors: &bool) {
+pub fn render(
+    gs: &mut GameState,
+    is_updated: bool,
+    block_characters: &String,
+    colors: &bool,
+    sirtet: &bool,
+) {
     if !is_updated {
         return;
     }
 
     let mut stdout = stdout();
     let width: u16 = gs.display[0].len() as u16;
+    let mut current_col: u16 = if *sirtet { 3 } else { 1 };
+    let proxy_display = if *sirtet {
+        gs.display.clone().into_iter().rev().collect()
+    } else {
+        gs.display.clone()
+    };
 
-    stdout.queue(MoveTo(width + 3, 1)).unwrap(); // move cursor to top left
-    for (c, row) in gs.display.iter().enumerate() {
+    stdout.queue(MoveTo(width + 3, current_col)).unwrap(); // move cursor to top left
+    for row in proxy_display {
         for ch in row {
             match ch.game_state {
                 State::Empty => {
@@ -62,8 +74,13 @@ pub fn render(gs: &mut GameState, is_updated: bool, block_characters: &String, c
                 }
             }
         }
-        stdout.queue(MoveTo(width + 3, (c + 2) as u16)).unwrap();
+        stdout
+            .queue(MoveTo(width + 3, current_col + 1))
+            .unwrap();
+        current_col += 1;
     }
+
+    // drop(proxy_display);
 
     // hold piece
     stdout.queue(MoveTo(2, 1)).unwrap();
@@ -183,6 +200,38 @@ pub fn init(width: usize, height: usize) -> Vec<Vec<Tetrominoe>> {
     stdout.flush().unwrap();
 
     display
+}
+
+pub fn sirtet_borders(width: usize, height: usize) {
+    // walls
+    let mut stdout = stdout();
+    stdout.queue(Clear(ClearType::All)).unwrap();
+    // Start at the bottom-left of the display
+    stdout.queue(MoveTo(11, 1)).unwrap();
+
+    // Draw the spikes at the top (previously at the bottom)
+    stdout
+        .queue(Print(format!("{}{}", " ".repeat(2), "/\\".repeat(width))))
+        .unwrap();
+    stdout.queue(MoveTo(11, 2)).unwrap(); // move the cursor up
+
+    // Draw the top wall (previously at the bottom)
+    stdout
+        .queue(Print(format!("<!{}!>", "=".repeat(width * 2))))
+        .unwrap();
+    stdout.queue(MoveTo(11, 3)).unwrap(); // move the cursor up
+
+    for row_num in 0..height {
+        stdout.queue(Print("<!")).unwrap(); // left wall
+        for _ in 0..width {
+            stdout.queue(Print("  ")).unwrap();
+        }
+        stdout.queue(Print("!>")).unwrap(); // right wall
+        stdout.queue(MoveTo(11, row_num as u16 + 4)).unwrap(); // move cursor up
+    }
+
+    stdout.queue(Hide).unwrap(); // Hide the cursor
+    stdout.flush().unwrap();
 }
 
 pub fn gravity(gs: &mut GameState) -> bool {
