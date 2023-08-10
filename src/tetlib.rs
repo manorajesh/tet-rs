@@ -74,9 +74,7 @@ pub fn render(
                 }
             }
         }
-        stdout
-            .queue(MoveTo(width + 3, current_col + 1))
-            .unwrap();
+        stdout.queue(MoveTo(width + 3, current_col + 1)).unwrap();
         current_col += 1;
     }
 
