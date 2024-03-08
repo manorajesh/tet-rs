@@ -535,22 +535,22 @@ pub fn get_input() -> char {
                     ..
                 }) => return 'p', // pause
                 Event::Key(KeyEvent {
-                    code: KeyCode::Left,
+                    code: KeyCode::Left | KeyCode::Char('h'),
                     kind: KeyEventKind::Press,
                     ..
                 }) => return 'l', // move left
                 Event::Key(KeyEvent {
-                    code: KeyCode::Right,
+                    code: KeyCode::Right | KeyCode::Char('l'),
                     kind: KeyEventKind::Press,
                     ..
                 }) => return 'r', // move right
                 Event::Key(KeyEvent {
-                    code: KeyCode::Up,
+                    code: KeyCode::Up | KeyCode::Char('k'),
                     kind: KeyEventKind::Press,
                     ..
                 }) => return 'u', // rotate clockwise
                 Event::Key(KeyEvent {
-                    code: KeyCode::Down,
+                    code: KeyCode::Down | KeyCode::Char('j'),
                     kind: KeyEventKind::Press,
                     ..
                 }) => return 'd', // soft drop
