@@ -18,12 +18,7 @@ pub struct Args {
     pub hold: bool,
 
     /// Gravity speed for the game
-    #[clap(
-        short = 't',
-        long = "tick",
-        default_value = "10",
-        value_name = "MILLISECONDS"
-    )]
+    #[clap(short = 't', long = "tick", default_value = "10", value_name = "MILLISECONDS")]
     pub gravity: u64,
 
     /// Path to save file [default: save.tetris]
@@ -45,4 +40,8 @@ pub struct Args {
     /// Play Sirtet (Upside-down Tetris)
     #[clap(long = "sirtet", action)]
     pub sirtet: bool,
+
+    /// Ai mode
+    #[clap(short, long, action)]
+    pub ai: bool,
 }

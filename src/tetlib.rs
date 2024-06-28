@@ -1,23 +1,17 @@
 use crossterm::{
-    cursor::{Hide, MoveTo},
-    event::{poll, KeyEventKind},
-    style::{Color, Print, ResetColor, SetForegroundColor},
-    terminal::{Clear, ClearType},
+    cursor::{ Hide, MoveTo },
+    event::{ poll, KeyEventKind },
+    style::{ Color, Print, ResetColor, SetForegroundColor },
+    terminal::{ Clear, ClearType },
     QueueableCommand,
 };
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent};
+use crossterm::event::{ self, Event, KeyCode, KeyEvent };
 
-use std::{
-    io::{stdout, Write},
-    time::Duration,
-};
+use std::{ io::{ stdout, Write }, time::Duration };
 
 use crate::tetrominoe::Tetrominoe;
-use crate::{
-    gamestate::GameState,
-    tetrominoe::{State, TColor},
-};
+use crate::{ gamestate::GameState, tetrominoe::{ State, TColor } };
 
 pub const EMP: char = '.';
 
@@ -26,7 +20,7 @@ pub fn render(
     is_updated: bool,
     block_characters: &String,
     colors: &bool,
-    sirtet: &bool,
+    sirtet: &bool
 ) {
     if !is_updated {
         return;
@@ -61,11 +55,13 @@ pub fn render(
                 }
                 State::Ghost => {
                     stdout
-                        .queue(SetForegroundColor(Color::Rgb {
-                            r: 50,
-                            g: 50,
-                            b: 50,
-                        }))
+                        .queue(
+                            SetForegroundColor(Color::Rgb {
+                                r: 50,
+                                g: 50,
+                                b: 50,
+                            })
+                        )
                         .unwrap()
                         .queue(Print("//"))
                         .unwrap()
@@ -91,11 +87,7 @@ pub fn render(
             for row in 0..upright.shape.len() {
                 for col in 0..upright.shape[row].len() {
                     if upright.shape[row][col] == 'a' {
-                        let color = if !colors {
-                            piece.as_color()
-                        } else {
-                            Color::White
-                        };
+                        let color = if !colors { piece.as_color() } else { Color::White };
 
                         stdout
                             .queue(SetForegroundColor(color))
@@ -117,19 +109,13 @@ pub fn render(
 
     // print stats
     stdout.queue(MoveTo(width * 4, 1)).unwrap();
-    stdout
-        .queue(Print(format!("Score: {}", gs.gamescore.score)))
-        .unwrap();
+    stdout.queue(Print(format!("Score: {}", gs.gamescore.score))).unwrap();
     stdout.queue(MoveTo(width * 4, 3)).unwrap();
-    stdout
-        .queue(Print(format!("Level: {}", gs.gamescore.level)))
-        .unwrap();
+    stdout.queue(Print(format!("Level: {}", gs.gamescore.level))).unwrap();
     stdout.queue(MoveTo(width * 4, 5)).unwrap();
     gs.gamescore.update();
     let time = gs.gamescore.get_time();
-    stdout
-        .queue(Print(format!("Time: {}:{:02}", time / 60, time % 60)))
-        .unwrap();
+    stdout.queue(Print(format!("Time: {}:{:02}", time / 60, time % 60))).unwrap();
 
     // next piece
     stdout.queue(MoveTo(width * 4, 8)).unwrap();
@@ -138,11 +124,7 @@ pub fn render(
     for row in 0..gs.next_piece.shape.len() {
         for col in 0..gs.next_piece.shape[row].len() {
             if gs.next_piece.shape[row][col] == 'a' {
-                let color = if !colors {
-                    gs.next_piece.as_color()
-                } else {
-                    Color::White
-                };
+                let color = if !colors { gs.next_piece.as_color() } else { Color::White };
 
                 stdout
                     .queue(SetForegroundColor(color))
@@ -181,19 +163,8 @@ pub fn init(width: usize, height: usize) -> Vec<Vec<Tetrominoe>> {
         stdout.queue(Print("!>")).unwrap(); // right wall
         stdout.queue(MoveTo(11, (row.0 + 2) as u16)).unwrap();
     }
-    stdout
-        .queue(Print(format!(
-            "<!{}!>\r\n",
-            "=".repeat(display[0].len() * 2)
-        )))
-        .unwrap(); // bottom wall
-    stdout
-        .queue(Print(format!(
-            "{}{}",
-            " ".repeat(13),
-            "\\/".repeat(display[0].len())
-        )))
-        .unwrap(); // bottom spikes
+    stdout.queue(Print(format!("<!{}!>\r\n", "=".repeat(display[0].len() * 2)))).unwrap(); // bottom wall
+    stdout.queue(Print(format!("{}{}", " ".repeat(13), "\\/".repeat(display[0].len())))).unwrap(); // bottom spikes
     stdout.queue(Hide).unwrap(); // Hide the cursor
     stdout.flush().unwrap();
 
@@ -208,15 +179,11 @@ pub fn sirtet_borders(width: usize, height: usize) {
     stdout.queue(MoveTo(11, 1)).unwrap();
 
     // Draw the spikes at the top (previously at the bottom)
-    stdout
-        .queue(Print(format!("{}{}", " ".repeat(2), "/\\".repeat(width))))
-        .unwrap();
+    stdout.queue(Print(format!("{}{}", " ".repeat(2), "/\\".repeat(width)))).unwrap();
     stdout.queue(MoveTo(11, 2)).unwrap(); // move the cursor up
 
     // Draw the top wall (previously at the bottom)
-    stdout
-        .queue(Print(format!("<!{}!>", "=".repeat(width * 2))))
-        .unwrap();
+    stdout.queue(Print(format!("<!{}!>", "=".repeat(width * 2)))).unwrap();
     stdout.queue(MoveTo(11, 3)).unwrap(); // move the cursor up
 
     for row_num in 0..height {
@@ -225,7 +192,7 @@ pub fn sirtet_borders(width: usize, height: usize) {
             stdout.queue(Print("  ")).unwrap();
         }
         stdout.queue(Print("!>")).unwrap(); // right wall
-        stdout.queue(MoveTo(11, row_num as u16 + 4)).unwrap(); // move cursor up
+        stdout.queue(MoveTo(11, (row_num as u16) + 4)).unwrap(); // move cursor up
     }
 
     stdout.queue(Hide).unwrap(); // Hide the cursor
@@ -237,8 +204,9 @@ pub fn gravity(gs: &mut GameState) -> bool {
     for row in (0..gs.display.len()).rev() {
         for col in 0..gs.display[row].len() {
             if gs.display[row][col].game_state == State::Active {
-                if row == gs.display.len() - 1
-                    || gs.display[row + 1][col].game_state == State::Landed
+                if
+                    row == gs.display.len() - 1 ||
+                    gs.display[row + 1][col].game_state == State::Landed
                 {
                     gs.display = prev_display;
                     landed(gs);
@@ -281,8 +249,9 @@ pub fn handle_input(gs: &mut GameState, key: char) {
             for row in (0..gs.display.len()).rev() {
                 for col in (0..gs.display[row].len()).rev() {
                     if gs.display[row][col].game_state == State::Active {
-                        if col == gs.display[row].len() - 1
-                            || gs.display[row][col + 1].game_state == State::Landed
+                        if
+                            col == gs.display[row].len() - 1 ||
+                            gs.display[row][col + 1].game_state == State::Landed
                         {
                             gs.display = prev_display;
                             return;
@@ -337,11 +306,14 @@ pub fn handle_input(gs: &mut GameState, key: char) {
                         return;
                     }
 
-                    if gs.active_piece.shape[row - gs.active_piece.row][col - gs.active_piece.col]
-                        == 'a'
+                    if
+                        gs.active_piece.shape[row - gs.active_piece.row]
+                            [col - gs.active_piece.col] == 'a'
                     {
-                        gs.display[row][col] =
-                            Tetrominoe::new(Some(State::Active), Some(gs.active_piece.color));
+                        gs.display[row][col] = Tetrominoe::new(
+                            Some(State::Active),
+                            Some(gs.active_piece.color)
+                        );
                     }
                 }
             }
@@ -378,8 +350,10 @@ pub fn new_piece(gs: &mut GameState, desired_piece: Option<char>) -> bool {
             gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Blue));
             gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Blue));
             gs.display[2][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Blue));
-            gs.display[2][half_width - 1] =
-                Tetrominoe::new(Some(State::Active), Some(TColor::Blue));
+            gs.display[2][half_width - 1] = Tetrominoe::new(
+                Some(State::Active),
+                Some(TColor::Blue)
+            );
         }
         'L' => {
             // L
@@ -388,27 +362,37 @@ pub fn new_piece(gs: &mut GameState, desired_piece: Option<char>) -> bool {
             gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Orange));
             gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Orange));
             gs.display[2][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Orange));
-            gs.display[2][half_width + 1] =
-                Tetrominoe::new(Some(State::Active), Some(TColor::Orange));
+            gs.display[2][half_width + 1] = Tetrominoe::new(
+                Some(State::Active),
+                Some(TColor::Orange)
+            );
         }
         'O' => {
             // OO
             // OO
             gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Yellow));
-            gs.display[0][half_width + 1] =
-                Tetrominoe::new(Some(State::Active), Some(TColor::Yellow));
+            gs.display[0][half_width + 1] = Tetrominoe::new(
+                Some(State::Active),
+                Some(TColor::Yellow)
+            );
             gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Yellow));
-            gs.display[1][half_width + 1] =
-                Tetrominoe::new(Some(State::Active), Some(TColor::Yellow));
+            gs.display[1][half_width + 1] = Tetrominoe::new(
+                Some(State::Active),
+                Some(TColor::Yellow)
+            );
         }
         'S' => {
             // SS
             //  SS
             gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Green));
-            gs.display[0][half_width + 1] =
-                Tetrominoe::new(Some(State::Active), Some(TColor::Green));
-            gs.display[1][half_width - 1] =
-                Tetrominoe::new(Some(State::Active), Some(TColor::Green));
+            gs.display[0][half_width + 1] = Tetrominoe::new(
+                Some(State::Active),
+                Some(TColor::Green)
+            );
+            gs.display[1][half_width - 1] = Tetrominoe::new(
+                Some(State::Active),
+                Some(TColor::Green)
+            );
             gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Green));
         }
         'T' => {
@@ -416,11 +400,15 @@ pub fn new_piece(gs: &mut GameState, desired_piece: Option<char>) -> bool {
             // TT
             // T
             gs.display[0][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Magenta));
-            gs.display[1][half_width - 1] =
-                Tetrominoe::new(Some(State::Active), Some(TColor::Magenta));
+            gs.display[1][half_width - 1] = Tetrominoe::new(
+                Some(State::Active),
+                Some(TColor::Magenta)
+            );
             gs.display[1][half_width] = Tetrominoe::new(Some(State::Active), Some(TColor::Magenta));
-            gs.display[1][half_width + 1] =
-                Tetrominoe::new(Some(State::Active), Some(TColor::Magenta));
+            gs.display[1][half_width + 1] = Tetrominoe::new(
+                Some(State::Active),
+                Some(TColor::Magenta)
+            );
         }
         'Z' => {
             //  ZZ
@@ -460,15 +448,22 @@ pub fn full_line(gs: &mut GameState) {
     }
 
     for _ in 0..lines {
-        gs.display
-            .insert(0, vec![Tetrominoe::default(); gs.display[0].len()]); // add new line at the top
+        gs.display.insert(0, vec![Tetrominoe::default(); gs.display[0].len()]); // add new line at the top
     }
 
     match lines {
-        1 => gs.gamescore.score += 40 * (gs.gamescore.level + 1),
-        2 => gs.gamescore.score += 100 * (gs.gamescore.level + 1),
-        3 => gs.gamescore.score += 300 * (gs.gamescore.level + 1),
-        4 => gs.gamescore.score += 1200 * (gs.gamescore.level + 1),
+        1 => {
+            gs.gamescore.score += 40 * (gs.gamescore.level + 1);
+        }
+        2 => {
+            gs.gamescore.score += 100 * (gs.gamescore.level + 1);
+        }
+        3 => {
+            gs.gamescore.score += 300 * (gs.gamescore.level + 1);
+        }
+        4 => {
+            gs.gamescore.score += 1200 * (gs.gamescore.level + 1);
+        }
         _ => (),
     }
 
@@ -490,8 +485,9 @@ pub fn ghost_piece(gs: &mut GameState) {
 
     for row in 0..ghost.display.len() {
         for col in 0..ghost.display[row].len() {
-            if ghost.display[row][col].game_state == State::Active
-                && gs.display[row][col].game_state == State::Empty
+            if
+                ghost.display[row][col].game_state == State::Active &&
+                gs.display[row][col].game_state == State::Empty
             {
                 gs.display[row][col].game_state = State::Ghost;
             }
@@ -499,7 +495,7 @@ pub fn ghost_piece(gs: &mut GameState) {
     }
 }
 
-fn gravity_until_new_piece(gs: &mut GameState) {
+pub fn gravity_until_new_piece(gs: &mut GameState) {
     let mut prev_display = gs.display.clone();
     gravity(gs);
     while gs.display[0][gs.display[0].len() / 2].game_state == State::Empty {
@@ -514,56 +510,48 @@ pub fn get_input() -> char {
         if poll(Duration::from_millis(0)).unwrap() {
             let input = event::read().unwrap();
             match input {
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char('q'),
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => return 'q', // quit
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char(' '),
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => return 's', // hard drop
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char('c'),
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => return 'c', // hold
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char('p'),
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => return 'p', // pause
-                Event::Key(KeyEvent {
-                    code: KeyCode::Left,
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => return 'l', // move left
-                Event::Key(KeyEvent {
-                    code: KeyCode::Right,
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => return 'r', // move right
-                Event::Key(KeyEvent {
-                    code: KeyCode::Up,
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => return 'u', // rotate clockwise
-                Event::Key(KeyEvent {
-                    code: KeyCode::Down,
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => return 'd', // soft drop
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char('y'),
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => return 'y', // yes
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char('n'),
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => return 'n', // no
+                Event::Key(
+                    KeyEvent { code: KeyCode::Char('q'), kind: KeyEventKind::Press, .. },
+                ) => {
+                    return 'q';
+                } // quit
+                Event::Key(
+                    KeyEvent { code: KeyCode::Char(' '), kind: KeyEventKind::Press, .. },
+                ) => {
+                    return 's';
+                } // hard drop
+                Event::Key(
+                    KeyEvent { code: KeyCode::Char('c'), kind: KeyEventKind::Press, .. },
+                ) => {
+                    return 'c';
+                } // hold
+                Event::Key(
+                    KeyEvent { code: KeyCode::Char('p'), kind: KeyEventKind::Press, .. },
+                ) => {
+                    return 'p';
+                } // pause
+                Event::Key(KeyEvent { code: KeyCode::Left, kind: KeyEventKind::Press, .. }) => {
+                    return 'l';
+                } // move left
+                Event::Key(KeyEvent { code: KeyCode::Right, kind: KeyEventKind::Press, .. }) => {
+                    return 'r';
+                } // move right
+                Event::Key(KeyEvent { code: KeyCode::Up, kind: KeyEventKind::Press, .. }) => {
+                    return 'u';
+                } // rotate clockwise
+                Event::Key(KeyEvent { code: KeyCode::Down, kind: KeyEventKind::Press, .. }) => {
+                    return 'd';
+                } // soft drop
+                Event::Key(
+                    KeyEvent { code: KeyCode::Char('y'), kind: KeyEventKind::Press, .. },
+                ) => {
+                    return 'y';
+                } // yes
+                Event::Key(
+                    KeyEvent { code: KeyCode::Char('n'), kind: KeyEventKind::Press, .. },
+                ) => {
+                    return 'n';
+                } // no
 
                 _ => (),
             }
@@ -608,37 +596,33 @@ pub fn put_text(width: u16, height: u16, text: &str) {
     stdout
         .queue(SetForegroundColor(Color::Red))
         .unwrap()
-        .queue(Print("=".repeat(width as usize * 2)))
+        .queue(Print("=".repeat((width as usize) * 2)))
         .unwrap()
         .queue(ResetColor)
         .unwrap();
 
     stdout.queue(MoveTo(width + 3, height / 2 - 1)).unwrap();
-    stdout.queue(Print(" ".repeat(width as usize * 2))).unwrap();
+    stdout.queue(Print(" ".repeat((width as usize) * 2))).unwrap();
 
     // text
     stdout.queue(MoveTo(width + 3, height / 2)).unwrap();
     stdout
         .queue(SetForegroundColor(Color::Red))
         .unwrap()
-        .queue(Print(format!(
-            "{:^text_width$}",
-            text,
-            text_width = width as usize * 2
-        )))
+        .queue(Print(format!("{:^text_width$}", text, text_width = (width as usize) * 2)))
         .unwrap()
         .queue(ResetColor)
         .unwrap();
 
     stdout.queue(MoveTo(width + 3, height / 2 + 1)).unwrap();
-    stdout.queue(Print(" ".repeat(width as usize * 2))).unwrap();
+    stdout.queue(Print(" ".repeat((width as usize) * 2))).unwrap();
 
     // bottom bar
     stdout.queue(MoveTo(width + 3, height / 2 + 2)).unwrap();
     stdout
         .queue(SetForegroundColor(Color::Red))
         .unwrap()
-        .queue(Print("=".repeat(width as usize * 2)))
+        .queue(Print("=".repeat((width as usize) * 2)))
         .unwrap()
         .queue(ResetColor)
         .unwrap();

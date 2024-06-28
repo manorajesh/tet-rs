@@ -1,7 +1,7 @@
 use crossterm::style::Color;
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
 
-use crate::{bag::Bag, tetlib::EMP};
+use crate::{ bag::Bag, tetlib::EMP };
 
 #[derive(Clone, PartialEq, Debug, Copy, Default, Deserialize, Serialize, Hash)]
 pub enum TColor {
@@ -33,7 +33,8 @@ pub struct Tetrominoe {
     pub ptype: char,
     pub color: TColor,
     pub game_state: State,
-    rotation_state: usize,
+    pub rotation_state: usize,
+    pub number_of_rotations: usize, // **unique** rotations for each piece (1 index)
 }
 
 impl Tetrominoe {
@@ -46,6 +47,7 @@ impl Tetrominoe {
             color: color.unwrap_or(TColor::Empty),
             game_state: state.unwrap_or(State::Empty),
             rotation_state: 0,
+            number_of_rotations: 0,
         }
     }
 
@@ -54,6 +56,7 @@ impl Tetrominoe {
         let shape = match shape {
             'I' => {
                 self.color = TColor::Cyan;
+                self.number_of_rotations = 2;
                 [
                     [EMP, 'a', EMP, EMP],
                     [EMP, 'a', EMP, EMP],
@@ -64,6 +67,7 @@ impl Tetrominoe {
 
             'J' => {
                 self.color = TColor::Blue;
+                self.number_of_rotations = 4;
                 [
                     [EMP, 'a', EMP, EMP],
                     [EMP, 'a', EMP, EMP],
@@ -74,6 +78,7 @@ impl Tetrominoe {
 
             'L' => {
                 self.color = TColor::Orange;
+                self.number_of_rotations = 4;
                 [
                     [EMP, 'a', EMP, EMP],
                     [EMP, 'a', EMP, EMP],
@@ -84,6 +89,7 @@ impl Tetrominoe {
 
             'O' => {
                 self.color = TColor::Yellow;
+                self.number_of_rotations = 1;
                 [
                     [EMP, EMP, EMP, EMP],
                     [EMP, 'a', 'a', EMP],
@@ -94,6 +100,7 @@ impl Tetrominoe {
 
             'Z' => {
                 self.color = TColor::Red;
+                self.number_of_rotations = 2;
                 [
                     [EMP, EMP, EMP, EMP],
                     ['a', 'a', EMP, EMP],
@@ -104,6 +111,7 @@ impl Tetrominoe {
 
             'T' => {
                 self.color = TColor::Magenta;
+                self.number_of_rotations = 4;
                 [
                     [EMP, EMP, EMP, EMP],
                     [EMP, 'a', EMP, EMP],
@@ -114,6 +122,7 @@ impl Tetrominoe {
 
             'S' => {
                 self.color = TColor::Green;
+                self.number_of_rotations = 2;
                 [
                     [EMP, EMP, EMP, EMP],
                     [EMP, 'a', 'a', EMP],
@@ -238,7 +247,7 @@ impl Tetrominoe {
                     }
 
                     _ => panic!("Unknown rotation state: {}", self.rotation_state),
-                }
+                };
             }
 
             _ => panic!("Unknown shape: {}", self.ptype),
@@ -258,11 +267,12 @@ impl Tetrominoe {
         match self.color {
             TColor::Cyan => Color::Cyan,
             TColor::Blue => Color::Blue,
-            TColor::Orange => Color::Rgb {
-                r: 255,
-                g: 127,
-                b: 0,
-            },
+            TColor::Orange =>
+                Color::Rgb {
+                    r: 255,
+                    g: 127,
+                    b: 0,
+                },
             TColor::Yellow => Color::Yellow,
             TColor::Red => Color::Red,
             TColor::Magenta => Color::Magenta,

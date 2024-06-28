@@ -1,14 +1,15 @@
+use crate::ai::Move;
 use crate::bag::Bag;
-use crate::tetlib::{get_input, new_piece, put_text};
-use crate::{gamescore::GameScore, tetlib::init, tetrominoe::Tetrominoe};
-use crate::{HEIGHT, WIDTH};
-use bincode::{deserialize, serialize};
-use serde::{Deserialize, Serialize};
+use crate::tetlib::{ get_input, new_piece, put_text };
+use crate::{ gamescore::GameScore, tetlib::init, tetrominoe::Tetrominoe };
+use crate::{ HEIGHT, WIDTH };
+use bincode::{ deserialize, serialize };
+use serde::{ Deserialize, Serialize };
 use std::collections::hash_map::DefaultHasher;
 use std::fs::OpenOptions;
 use std::hash::Hash;
 use std::hash::Hasher;
-use std::io::{Read, Write};
+use std::io::{ Read, Write };
 use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
@@ -38,6 +39,8 @@ pub struct GameState {
     pub counter: usize,
     pub is_game_over: bool,
     pub bag: Bag,
+    pub ai: bool,
+    pub ai_best_move: Option<Move>,
 }
 
 impl GameState {
@@ -51,6 +54,8 @@ impl GameState {
             counter: 0,
             is_game_over: false,
             bag: Bag::new(),
+            ai: false,
+            ai_best_move: None,
         };
         init(width, height);
         new_piece(&mut gs, None);
@@ -75,11 +80,7 @@ impl GameState {
             return false;
         }
 
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(&path)
-            .unwrap();
+        let mut file = OpenOptions::new().write(true).create(true).open(&path).unwrap();
 
         self.gamescore.stop_timer();
         let mut hasher = DefaultHasher::new();
@@ -111,8 +112,9 @@ impl GameState {
         let mut serialized_data = Vec::new();
         file.read_to_end(&mut serialized_data).unwrap();
 
-        let game_wrapper: GameWrapper =
-            deserialize(&serialized_data).expect("Failed to deserialize game.");
+        let game_wrapper: GameWrapper = deserialize(&serialized_data).expect(
+            "Failed to deserialize game."
+        );
 
         if !game_wrapper.verify() {
             println!("Save file is corrupted. Starting new game.");
@@ -125,6 +127,10 @@ impl GameState {
         init(width, height);
         game
     }
+
+    pub fn enable_ai(&mut self) {
+        self.ai = true;
+    }
 }
 
 fn confirmation(prompt: &str) -> bool {
@@ -132,14 +138,20 @@ fn confirmation(prompt: &str) -> bool {
         put_text(
             WIDTH.try_into().unwrap(),
             HEIGHT.try_into().unwrap(),
-            format!("{} (y/n)", prompt).as_str(),
+            format!("{} (y/n)", prompt).as_str()
         );
         loop {
             let key = get_input();
             match key {
-                'y' => return true,
-                'n' => return false,
-                _ => continue,
+                'y' => {
+                    return true;
+                }
+                'n' => {
+                    return false;
+                }
+                _ => {
+                    continue;
+                }
             }
         }
     }
